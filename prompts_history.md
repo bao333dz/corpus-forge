@@ -13,3 +13,6 @@
 ### 15-05-2026 13:01
 - **Prompt**: this is good now please make a .md file to explain the goal for all the team member (i work in a team of 3) to come up with some suggestion and idea for the project
 
+### 15-05-2026 13:02
+- **Prompt**: aight bro i changed to agent mode, u may implement now
+
