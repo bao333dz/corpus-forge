@@ -63,3 +63,8 @@
 - **Hook Version**: 1.02
 - **Date**: 17-05-2026 20:08
 - **Prompt**: create a small prototype of the features needed for layer 1
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 17-05-2026 20:14
+- **Prompt**: what about html and css to access and test the app for adding, removing, etc for the documents?
