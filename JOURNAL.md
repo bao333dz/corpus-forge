@@ -23,3 +23,8 @@
 - **Hook Version**: 1.02
 - **Date**: 17-05-2026 13:35
 - **Prompt**: AI For Software Development_Course - w14 - course 16 - Capstone Project - Kick-Off.pdf and Project Corpuse Forge - Executive Summary.pdf
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 17-05-2026 13:37
+- **Prompt**: i dont understand. you are asking me if i should paste where it says layer 1 in both of the pdfs?
