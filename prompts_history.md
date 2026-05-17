@@ -31,3 +31,6 @@
 ### 17-05-2026 14:14
 - **Prompt**: I want to go ahead using Streamlit over React. Explain how Streamlit works to a 5 year old. And use the very first feature (Document upload) as an example
 
+### 17-05-2026 14:17
+- **Prompt**: yes. design the first Streamlit screen for Document Upload and break it into the exact sections i need
+
