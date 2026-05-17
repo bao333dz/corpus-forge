@@ -16,3 +16,6 @@
 ### 17-05-2026 13:37
 - **Prompt**: i dont understand. you are asking me if i should paste where it says layer 1 in both of the pdfs?
 
+### 17-05-2026 13:37
+- **Prompt**: if you're on agent mode, you would be able to do it yourself?
+
