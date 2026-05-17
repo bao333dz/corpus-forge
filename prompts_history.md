@@ -35,3 +35,6 @@
 - **Prompt**: yes. design the first Streamlit screen for Document Upload and break it into the exact sections i need### 17-05-2026 20:27
 - **Prompt**: does this fully satisify the entire layer 1 requirements? what else should i add next
 
+### 17-05-2026 20:32
+- **Prompt**: the prototype is very buggy. it added multiple of the same pdf by itself. and when i remove, it says "AttributeError: module 'streamlit' has no attribute 'experimental_rerun' Traceback: File "C:\Users\moder\Documents\GitHub\corpus-forge\app.py", line 239, in <module>     main() File "C:\Users\moder\Documents\GitHub\corpus-forge\app.py", line 193, in main     st.experimental_rerun()     ^^^^^^^^^^^^^^^^^^^^^"
+
