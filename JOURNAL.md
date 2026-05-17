@@ -73,3 +73,8 @@
 - **Hook Version**: 1.02
 - **Date**: 17-05-2026 20:15
 - **Prompt**: use streamlit UI and inject css into it
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 17-05-2026 20:23
+- **Prompt**: teach me how to run streamlit and see the web app
