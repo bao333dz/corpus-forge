@@ -40,3 +40,6 @@
 ### 17-05-2026 20:14
 - **Prompt**: what about html and css to access and test the app for adding, removing, etc for the documents?
 
+### 17-05-2026 20:15
+- **Prompt**: use streamlit UI and inject css into it
+
