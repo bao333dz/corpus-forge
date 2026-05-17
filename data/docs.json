@@ -1,0 +1,26 @@
+[
+  {
+    "id": "ec289af82bcf4970818a1ddd595d570b",
+    "name": "Project Corpuse Forge - Executive Summary.pdf",
+    "filename": "ec289af82bcf4970818a1ddd595d570b_Project Corpuse Forge - Executive Summary.pdf",
+    "type": "pdf",
+    "ext": ".pdf",
+    "size": 83794,
+    "uploaded_at": "2026-05-17T18:34:47.009698Z",
+    "status": "saved",
+    "preview": "Capstone\n \nProject\n \n-\n \nGenerative\n \nAI\n \nfor\n \nSoftware\n \nEngineering\n \n-\n \nEPIT A\n \n-\n \n2026\n \nProject\n \nCorpus\n \nForge\n \n \nExecutive\n \nSummary\n \n \n1.\n \nProject\n \nOverview\n \nThis\n \nproject\n \nchallenges\n \nstudent\n \nteams\n \nto\n \ndesign,\n \nbuild,\n \nand\n \ncritically\n \nevaluate\n \nan\n \nAI-powered\n \nsoftware\n \nplatform\n \nthat\n \ntransforms\n \nheterogeneous\n \ndocument\n \ncollections\n \ninto\n \nactionable\n \nknowledge.\n \nThe\n \nobjective\n \nis\n \nnot\n \nsimply\n \nto\n \nbuild\n \nan\n \napplication,\n \nbut\n \nto\n \ndemonstrate\n \nengineering\n \njudgment,\n \nexperimentation,\n \ntechnical\n \nownership,\n \nand\n \neffective\n \ncollaboration\n \nwith\n \nAI-assisted\n \ndevelopment\n \ntools.\n \nStudents\n \nmust\n \ndesign\n \na\n \nsystem\n \ncapable\n \nof:\n \n●\n \nIngesting\n \nmultiple\n \ndocument\n \ntypes\n \n●\n \nOrganizing\n \nand\n \nmanaging\n \ndocument\n \ncollections\n \n●\n \nRetrieving\n \nrelevant\n \ninformation\n \nfrom\n \nselected\n \ncorpora\n \n●\n \nGenerating\n \nuseful\n \nknowledge\n \nartifacts\n \n●\n \nAllowing\n \nusers\n \nto\n \nsteer\n \nAI\n \nbehavior\n \nthrough\n \nprompts\n \n●\n \nPersisting\n \ndocuments\n \nand\n \ngenerated\n \noutputs\n \n●\n \nMonitoring\n \nAI\n \nusage\n \nand\n \ncost\n \nThe\n \nproject\n \nemphasizes\n \nexperimentation,\n \niteration,\n \nand\n \nevidence-based\n \nengineering\n \ndecisions.\n \n \n2.\n \nCore\n \nPlatform\n \nRequirements\n \n(Layer\n \n1)\n \nEach\n \nteam\n \nmust\n \nimplement\n \na\n \nworking\n \nweb\n \napplication\n \nthat\n \nsupports\n \nthe\n \nfollowing\n \ncapabilities:\n \nCorpus\n \nIngestion\n \nThe\n \nplatform\n \nmust\n \nprocess\n \nat\n \nleast\n \nthree\n \ndocument\n \ntypes,\n \nincluding:\n \n●\n \nText\n \nor\n \nMarkdown\n \n●\n \nPDF\n \n●\n \nSource\n \ncode\n \nfiles\n \nCorpus\n \nManagement\n \nUsers\n \nmust\n \nbe\n \nable\n \nto:\n \nCapstone\n \nProject\n \n-\n \nGenerative\n \nAI\n \nfor\n \nSoftware\n \nEngineering\n \n-\n \nEPIT A\n \n-\n \n2026\n \n●\n \nAdd\n \ndocuments\n \n●\n \nRemove\n \ndocuments\n \n●\n \nBrowse\n \ncollections\n \n●\n \nSelect\n \nactive\n \ndocuments\n \nfor\n \nAI\n \ninteraction\n \nRetrieval-Grounded\n \nAI\n \nWorkflows\n \nThe\n \nplatform\n \nmust\n \nsupport:\n \n●\n \nChat-based\n \nexploration\n \nand\n \nquestion\n \nanswering\n \n●\n \nFlashcard",
+    "active": false
+  },
+  {
+    "id": "cb2414834fe843de9ccda036ab32ff99",
+    "name": "HowToSetupYourTeamRepo.md",
+    "filename": "cb2414834fe843de9ccda036ab32ff99_HowToSetupYourTeamRepo.md",
+    "type": "text",
+    "ext": ".md",
+    "size": 954,
+    "uploaded_at": "2026-05-17T18:35:04.571833Z",
+    "status": "saved",
+    "preview": "# How to Set Up Your Team Repository\n\n* One repository per team.\n* One member of the team:\n\t1. clones https://github.com/bcs-s2-2026/capstone-corpus-forge\n\t2. creates a new GitHub repository named 'capstone-corpus-forge'. The repository must be public to give easy access to the other members of the team.\n\t3. links the cloned capstone project repository (1) to the new repository in (2).\n* The other members of the team clone the newly created GitHub repository (2).\n* The team repository must be created and sent to me by the end of today's class.\n* Each team member clones and pushes to the same repository.\n* Apply good source control and software engineering practices:\n    - meaningful commit messages. Use 'feat', 'fix', 'refactor', 'docs', etc. prefixes to indicate the type of change.\n    - commit early and often.\n    - you may use branches if you are comfortable with Git, but the main branch should always be in a runnable state.",
+    "active": false
+  }
+]
