@@ -8,3 +8,8 @@
 - **Hook Version**: 1.02
 - **Date**: 17-05-2026 13:29
 - **Prompt**: In the PDFs the Corpuse Forge project. As a socratic tutor for a computer science student. Help me think and understand how to implement the Layer 1
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 17-05-2026 13:34
+- **Prompt**: paste the later 1 excerpt from PDF here
