@@ -16,3 +16,6 @@
 ### 15-05-2026 13:02
 - **Prompt**: aight bro i changed to agent mode, u may implement now
 
+### 17-05-2026 11:42
+- **Prompt**: this is the basic requirement of this project, and of course i dont know how to do it for now, all i have in my mind is the user upload the document to the website and we call an api key of gemini and that's it i dont know what is api key is and how does it work so can you instruct me from the very basic of how to complete this project
+
