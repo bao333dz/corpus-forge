@@ -28,3 +28,6 @@
 ### 17-05-2026 14:05
 - **Prompt**: Q1. For frameworks; can i use a python-based framework like streamlit and flask? is React on the same level or is it too different? Q2. For styling, is it absolutely necessary to use CSS? if so, i'll stick with Tailwind Q3. I'm not sure about the App type Q4. Preferably offline so i can test it out Q5. Help me choose which features to choose first and finish them
 
+### 17-05-2026 14:14
+- **Prompt**: I want to go ahead using Streamlit over React. Explain how Streamlit works to a 5 year old. And use the very first feature (Document upload) as an example
+
