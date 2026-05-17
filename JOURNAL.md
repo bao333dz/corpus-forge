@@ -38,3 +38,8 @@
 - **Hook Version**: 1.02
 - **Date**: 17-05-2026 13:39
 - **Prompt**: read both of the PDFs entirely to understand. then tutor me for Layer 1, as i want to start working on it today and finish it
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 17-05-2026 13:56
+- **Prompt**: i want to focus on the frontend. letting my two other team members handle the backend and api call. help me get started and understand designing a frontend
