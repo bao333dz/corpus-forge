@@ -63,3 +63,8 @@
 - **Hook Version**: 1.02
 - **Date**: 17-05-2026 20:32
 - **Prompt**: the prototype is very buggy. it added multiple of the same pdf by itself. and when i remove, it says "AttributeError: module 'streamlit' has no attribute 'experimental_rerun' Traceback: File "C:\Users\moder\Documents\GitHub\corpus-forge\app.py", line 239, in <module>     main() File "C:\Users\moder\Documents\GitHub\corpus-forge\app.py", line 193, in main     st.experimental_rerun()     ^^^^^^^^^^^^^^^^^^^^^"
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 18-05-2026 14:20
+- **Prompt**: why cant i run this file
