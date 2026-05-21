@@ -5,6 +5,7 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
+from vector_store import embed_and_store_document, delete_document_embeddings
 
 try:
     import PyPDF2
@@ -160,35 +161,37 @@ def save_upload(uploaded_file):
     with open(dest_path, "wb") as f:
         f.write(uploaded_file.getbuffer())
 
-    # quick content extract for preview
+    # 1. Gather a quick snippet for the UI container preview
     preview = ""
     if ext in (".txt", ".md"):
-        preview = read_text_file(dest_path)
+        preview = read_text_file(dest_path, max_chars=2000)
         doc_type = "text"
     elif ext in (".py", ".js", ".java", ".c", ".cpp"):
-        preview = read_text_file(dest_path)
+        preview = read_text_file(dest_path, max_chars=2000)
         doc_type = "code"
     elif ext == ".pdf":
-        preview = extract_text_from_pdf(dest_path)
+        preview = extract_text_from_pdf(dest_path, max_chars=2000)
         doc_type = "pdf"
     else:
         doc_type = "other"
 
     uploaded_at = datetime.utcnow().isoformat() + "Z"
-    meta = {
-        "id": doc_id,
-        "name": uploaded_file.name,
-        "filename": dest_name,
-        "type": doc_type,
-        "ext": ext,
-        "size": uploaded_file.size,
-        "uploaded_at": uploaded_at,
-        "status": "saved",
-        "preview": preview,
-        "active": False,
-    }
 
-    # persist to sqlite
+    # 2. Extract FULL text across the whole file for vector database ingestion
+    if ext in (".txt", ".md", ".py", ".js", ".java", ".c", ".cpp"):
+        # Read entire content without char restrictions
+        with open(dest_path, "r", encoding="utf-8", errors="ignore") as f:
+            full_text = f.read()
+    elif ext == ".pdf" and PyPDF2 is not None:
+        try:
+            reader = PyPDF2.PdfReader(str(dest_path))
+            full_text = "\n".join([p.extract_text() or "" for p in reader.pages])
+        except Exception:
+            full_text = preview
+    else:
+        full_text = preview
+
+    # 3. Add to standard SQLite DB
     add_document_to_db(
         doc_id=doc_id,
         name=uploaded_file.name,
@@ -203,11 +206,27 @@ def save_upload(uploaded_file):
         active=0,
     )
 
-    return meta
+    # 4. CRITICAL: Automatically chunk, embed, and store into ChromaDB
+    try:
+        embed_and_store_document(doc_id=doc_id, filename=uploaded_file.name, full_text=full_text)
+    except Exception as e:
+        st.warning(f"Metadata saved, but failed vector embedding: {e}. Check your GEMINI_API_KEY.")
+
+    return {
+        "id": doc_id,
+        "name": uploaded_file.name,
+        "filename": dest_name,
+        "type": doc_type,
+        "ext": ext,
+        "size": uploaded_file.size,
+        "uploaded_at": uploaded_at,
+        "status": "saved",
+        "preview": preview,
+        "active": False,
+    }
 
 
 def delete_doc(doc_id):
-    # find metadata for doc to delete file
     meta = load_metadata()
     doc = next((m for m in meta if m["id"] == doc_id), None)
     if doc:
@@ -217,7 +236,14 @@ def delete_doc(doc_id):
                 p.unlink()
         except Exception:
             pass
-    # remove from DB
+            
+    # 1. Wipe out any embedded chunks belonging to this document from ChromaDB
+    try:
+        delete_document_embeddings(doc_id)
+    except Exception as e:
+        print(f"Error removing embeddings: {e}")
+
+    # 2. Remove the standard row record from SQLite
     delete_document_from_db(doc_id)
 
 
