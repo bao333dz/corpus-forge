@@ -5,8 +5,9 @@ import json
 import uuid
 from datetime import datetime
 from pathlib import Path
-from vector_store import embed_and_store_document, delete_document_embeddings
+import re
 
+# Try importing PyPDF2 safely for PDF processing
 try:
     import PyPDF2
 except Exception:
@@ -17,13 +18,15 @@ DATA_DIR = BASE_DIR / "data"
 DOCS_DIR = DATA_DIR / "docs"
 DB_FILE = DATA_DIR / "corpus_forge.db"
 
-
 def init_db():
+    """Ensures directories exist and initializes the SQLite database tables."""
     DATA_DIR.mkdir(exist_ok=True)
     DOCS_DIR.mkdir(exist_ok=True)
     
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
+    
+    # 1. Documents Metadata Table (Matches your UI column structure)
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS documents (
             id TEXT PRIMARY KEY,
@@ -36,84 +39,54 @@ def init_db():
             uploaded_at TEXT,
             preview TEXT,
             status TEXT,
-            active INTEGER DEFAULT 0
+            active INTEGER DEFAULT 1
         )
     """)
+    
+    # 2. Relational Chunks Table
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS document_chunks (
+            id TEXT PRIMARY KEY,
+            document_id TEXT,
+            chunk_index INTEGER,
+            text_content TEXT,
+            FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
+        )
+    """)
+    
     conn.commit()
     conn.close()
 
-    # migrate existing JSON metadata if present
-    old_meta = DATA_DIR / "docs.json"
-    try:
-        if old_meta.exists():
-            with open(old_meta, "r", encoding="utf-8") as f:
-                items = json.load(f) or []
-            if items:
-                conn = sqlite3.connect(DB_FILE)
-                cursor = conn.cursor()
-                for m in items:
-                    # skip if already present
-                    cursor.execute("SELECT 1 FROM documents WHERE id = ?", (m.get("id"),))
-                    if cursor.fetchone():
-                        continue
-                    filename = m.get("filename") or f"{m.get('id')}_{m.get('name')}"
-                    path = DOCS_DIR / filename
-                    cursor.execute(
-                        "INSERT OR IGNORE INTO documents (id, name, filename, path, type, ext, size, uploaded_at, preview, status, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                        (
-                            m.get("id"),
-                            m.get("name"),
-                            filename,
-                            str(path),
-                            m.get("type"),
-                            m.get("ext"),
-                            m.get("size"),
-                            m.get("uploaded_at"),
-                            m.get("preview"),
-                            m.get("status"),
-                            1 if m.get("active") else 0,
-                        ),
-                    )
-                conn.commit()
-                conn.close()
-            # backup old metadata file to avoid re-import
-            try:
-                old_meta.rename(DATA_DIR / "docs.json.bak")
-            except Exception:
-                pass
-    except Exception:
-        # non-critical; continue silently
-        pass
-
 
 def load_metadata():
+    """Fetches all documents from the SQLite database."""
     if not DB_FILE.exists():
         return []
     conn = sqlite3.connect(DB_FILE)
-    conn.row_factory = sqlite3.Row 
+    conn.row_factory = sqlite3.Row  # Access columns by name like a dict
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM documents")
     rows = cursor.fetchall()
     conn.close()
-    
     return [dict(row) for row in rows]
 
 
-def add_document_to_db(doc_id, name, filename, path, doc_type, ext, size, uploaded_at, preview, status, active=0):
+def add_document_to_db(doc_id, name, filename, path, file_type, ext, size, uploaded_at, preview, status):
+    """Inserts a new document record into the database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO documents (id, name, filename, path, type, ext, size, uploaded_at, preview, status, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (doc_id, name, filename, str(path), doc_type, ext, size, uploaded_at, preview, status, active)
-    )
+    cursor.execute("""
+        INSERT INTO documents (id, name, filename, path, type, ext, size, uploaded_at, preview, status, active) 
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1)
+    """, (doc_id, name, filename, str(path), file_type, ext, size, uploaded_at, preview, status))
     conn.commit()
     conn.close()
 
 
 def toggle_document_active(doc_id, current_active_status):
+    """Toggles the document active state between 1 (True) and 0 (False)."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    # Flip the status: if it's 1 it becomes 0, if it's 0 it becomes 1
     new_status = 0 if current_active_status == 1 else 1
     cursor.execute("UPDATE documents SET active = ? WHERE id = ?", (new_status, doc_id))
     conn.commit()
@@ -121,244 +94,216 @@ def toggle_document_active(doc_id, current_active_status):
 
 
 def delete_document_from_db(doc_id):
+    """Deletes a document record and its associated text chunks from the database."""
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+    cursor.execute("DELETE FROM document_chunks WHERE document_id = ?", (doc_id,))
     conn.commit()
     conn.close()
 
 
-def extract_text_from_pdf(path, max_chars=2000):
-    if PyPDF2 is None:
-        return "(PyPDF2 not installed; saved file only)"
-    try:
-        reader = PyPDF2.PdfReader(str(path))
-        text = []
-        for p in reader.pages[:3]:
-            try:
-                text.append(p.extract_text() or "")
-            except Exception:
-                pass
-        joined = "\n".join(text)
-        return joined[:max_chars]
-    except Exception as e:
-        return f"(failed to extract PDF text: {e})"
 
-
-def read_text_file(path, max_chars=2000):
-    try:
-        with open(path, "r", encoding="utf-8", errors="ignore") as f:
-            return f.read()[:max_chars]
-    except Exception as e:
-        return f"(failed to read file: {e})"
-
-
-def save_upload(uploaded_file):
-    ext = Path(uploaded_file.name).suffix.lower()
-    doc_id = uuid.uuid4().hex
-    dest_name = f"{doc_id}_{uploaded_file.name}"
-    dest_path = DOCS_DIR / dest_name
-    with open(dest_path, "wb") as f:
-        f.write(uploaded_file.getbuffer())
-
-    # 1. Gather a quick snippet for the UI container preview
-    preview = ""
-    if ext in (".txt", ".md"):
-        preview = read_text_file(dest_path, max_chars=2000)
-        doc_type = "text"
-    elif ext in (".py", ".js", ".java", ".c", ".cpp"):
-        preview = read_text_file(dest_path, max_chars=2000)
-        doc_type = "code"
-    elif ext == ".pdf":
-        preview = extract_text_from_pdf(dest_path, max_chars=2000)
-        doc_type = "pdf"
-    else:
-        doc_type = "other"
-
-    uploaded_at = datetime.utcnow().isoformat() + "Z"
-
-    # 2. Extract FULL text across the whole file for vector database ingestion
-    if ext in (".txt", ".md", ".py", ".js", ".java", ".c", ".cpp"):
-        # Read entire content without char restrictions
-        with open(dest_path, "r", encoding="utf-8", errors="ignore") as f:
-            full_text = f.read()
-    elif ext == ".pdf" and PyPDF2 is not None:
+def extract_all_text(file_path):
+    """Detects file extension and extracts pure text string."""
+    ext = Path(file_path).suffix.lower()
+    
+    # Format 1 & 2: Plain text, Markdown, or Code Source files (.py, .js, etc.)
+    if ext in [".txt", ".md", ".py", ".js", ".json", ".html", ".css"]:
         try:
-            reader = PyPDF2.PdfReader(str(dest_path))
-            full_text = "\n".join([p.extract_text() or "" for p in reader.pages])
-        except Exception:
-            full_text = preview
-    else:
-        full_text = preview
-
-    # 3. Add to standard SQLite DB
-    add_document_to_db(
-        doc_id=doc_id,
-        name=uploaded_file.name,
-        filename=dest_name,
-        path=dest_path,
-        doc_type=doc_type,
-        ext=ext,
-        size=uploaded_file.size,
-        uploaded_at=uploaded_at,
-        preview=preview,
-        status="saved",
-        active=0,
-    )
-
-    # 4. CRITICAL: Automatically chunk, embed, and store into ChromaDB
-    try:
-        embed_and_store_document(doc_id=doc_id, filename=uploaded_file.name, full_text=full_text)
-    except Exception as e:
-        st.warning(f"Metadata saved, but failed vector embedding: {e}. Check your GEMINI_API_KEY.")
-
-    return {
-        "id": doc_id,
-        "name": uploaded_file.name,
-        "filename": dest_name,
-        "type": doc_type,
-        "ext": ext,
-        "size": uploaded_file.size,
-        "uploaded_at": uploaded_at,
-        "status": "saved",
-        "preview": preview,
-        "active": False,
-    }
-
-
-def delete_doc(doc_id):
-    meta = load_metadata()
-    doc = next((m for m in meta if m["id"] == doc_id), None)
-    if doc:
-        try:
-            p = DOCS_DIR / doc.get("filename", "")
-            if p.exists():
-                p.unlink()
-        except Exception:
-            pass
+            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                return f.read()
+        except Exception as e:
+            return f"Error reading text/code file: {str(e)}"
             
-    # 1. Wipe out any embedded chunks belonging to this document from ChromaDB
-    try:
-        delete_document_embeddings(doc_id)
-    except Exception as e:
-        print(f"Error removing embeddings: {e}")
+    # Format 3: PDF Files
+    elif ext == ".pdf":
+        if PyPDF2 is None:
+            return "PyPDF2 library is missing. Cannot parse PDF contents."
+        try:
+            reader = PyPDF2.PdfReader(str(file_path))
+            text_parts = []
+            for page in reader.pages:
+                page_text = page.extract_text()
+                if page_text:
+                    text_parts.append(page_text)
+            return "\n".join(text_parts)
+        except Exception as e:
+            return f"Error reading PDF file: {str(e)}"
+            
+    return ""
 
-    # 2. Remove the standard row record from SQLite
-    delete_document_from_db(doc_id)
+
+def chunk_text(text, chunk_size=1000, overlap=200):
+    """Splits text into overlapping chunks to maintain conversational context boundaries."""
+    chunks = []
+    if not text:
+        return chunks
+    start = 0
+    while start < len(text):
+        end = start + chunk_size
+        chunks.append(text[start:end])
+        start += (chunk_size - overlap)
+    return chunks
 
 
-def toggle_active(doc_id, value):
-    # set active flag in DB
+def format_preview_for_ui(text, max_lines=2):
+    """Return a preview limited to max_lines, appending an indicator for omitted lines."""
+    if not text:
+        return "(no preview)"
+    # Normalize and split into lines
+    lines = str(text).splitlines()
+    if len(lines) <= max_lines:
+        return "\n".join(lines)
+    shown = lines[:max_lines]
+    rest = len(lines) - max_lines
+    return "\n".join(shown) + f"\n... ({rest} more lines)"
+
+
+def clean_display_name(filename: str) -> str:
+    """Return a human-friendly display name by removing a leading 32-char hex prefix if present."""
+    if not filename:
+        return ""
+    # remove leading 32 hex chars followed by underscore or hyphen
+    cleaned = re.sub(r'^[0-9a-fA-F]{32}[_-]', '', filename)
+    return cleaned
+
+
+def process_and_store_chunks(doc_id, file_path):
+    """Extracts raw text, chunks it, and writes chunks to the relational database table."""
+    full_text = extract_all_text(file_path)
+    text_chunks = chunk_text(full_text)
+    
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
-    cursor.execute("UPDATE documents SET active = ? WHERE id = ?", (1 if value else 0, doc_id))
+    for index, chunk_content in enumerate(text_chunks):
+        chunk_id = str(uuid.uuid4())
+        cursor.execute("""
+            INSERT INTO document_chunks (id, document_id, chunk_index, text_content)
+            VALUES (?, ?, ?, ?)
+        """, (chunk_id, doc_id, index, chunk_content))
     conn.commit()
     conn.close()
 
 
 def main():
+    # Automatically initialize tables on start
     init_db()
-    st.set_page_config(page_title="Corpus Forge — Upload", layout="wide")
-
-    # Inject lightweight CSS for improved visuals
-    st.markdown(
-        """
-        <style>
-        .stButton>button { background: linear-gradient(90deg,#06b6d4,#0ea5a4); color: white; border-radius:6px; padding:6px 10px; font-size:13px; line-height:1.2; }
-        .doc-row { border:1px solid #e6eef0; padding:10px; margin-bottom:8px; border-radius:6px; background:#fbfcfd }
-        .doc-meta { color:#475569; font-size:13px }
-        .summary { background:#f8fafc; padding:10px; border-radius:6px }
-        </style>
-        """,
-        unsafe_allow_html=True,
+    
+    st.set_page_config(
+        page_title="Project Corpus Forge - Core",
+        page_icon="🛠️",
+        layout="wide"
     )
 
-    st.title("Corpus Forge")
-    st.caption(
-        "Upload documents to build your active corpus. Supported: .txt, .md, .pdf, .py, .js"
-    )
+    st.title("Project Corpus Forge")
 
-    # initialize session state helper to avoid double-saving uploads across reruns
-    if "saved_upload_fingerprints" not in st.session_state:
-        st.session_state["saved_upload_fingerprints"] = []
-
-    col1, col2 = st.columns([2, 3])
-
-    with col1:
-        st.header("Upload")
-        uploaded = st.file_uploader(
-            "Choose files",
-            accept_multiple_files=True,
-            type=["txt", "md", "pdf", "py", "js", "java", "c", "cpp"],
-        )
-        if uploaded:
-            for u in uploaded:
-                # create a simple fingerprint to avoid saving the same uploaded file multiple times
-                fingerprint = f"{u.name}:{u.size}"
-                if fingerprint in st.session_state["saved_upload_fingerprints"]:
-                    # already handled this file in a previous run
-                    continue
-                try:
-                    m = save_upload(u)
-                    st.success(f"Saved {m['name']}")
-                    st.session_state["saved_upload_fingerprints"].append(fingerprint)
-                except Exception as e:
-                    st.error(f"Failed saving {u.name}: {e}")
-
-        st.markdown("---")
-        st.header("Document Library")
-        meta = load_metadata()
-        if not meta:
-            st.info("No documents uploaded yet.")
-        else:
-            # show simple table and controls
-            for m in meta:
-                with st.container():
-                    cols = st.columns([3, 1, 1, 1])
-                    cols[0].markdown(
-                        f"<div class='doc-row'><div><strong>{m['name']}</strong></div><div class='doc-meta'>Type: {m['type']} • Size: {m['size']} bytes</div></div>",
-                        unsafe_allow_html=True,
-                    )
-                    active = cols[1].checkbox(
-                        "Active", value=m.get("active", False), key=f"active_{m['id']}"
-                    )
-                    if active != m.get("active", False):
-                        toggle_active(m["id"], active)
-                    if cols[2].button("Preview", key=f"preview_{m['id']}"):
-                        st.session_state["preview_doc"] = m["id"]
-                    if cols[3].button("Delete", key=f"del_{m['id']}"):
-                        delete_doc(m["id"])
-
-    with col2:
-        st.header("Preview & Exploration")
-        preview_id = st.session_state.get("preview_doc")
-        meta = load_metadata()
-        if preview_id:
-            doc = next((x for x in meta if x["id"] == preview_id), None)
-        else:
-            doc = meta[0] if meta else None
-
-        if doc:
-            st.subheader(doc["name"])
-            st.write(f"Type: {doc['type']} • Uploaded: {doc['uploaded_at']}")
-            if doc["type"] in ("text", "code"):
-                st.code(
-                    doc.get("preview", "(no preview)"),
-                    language="python" if doc["type"] == "code" else None,
-                )
-            elif doc["type"] == ".pdf":
-                st.text_area(
-                    "Preview (first pages)",
-                    value=doc.get("preview", "(no preview)"),
-                    height=200,
-                )
-        else:
-            st.info("Select a document from the library to preview its contents.")
-
-        st.markdown("---")
+    # Sidebar parameters for generation controls
+    with st.sidebar:
+        st.header("Prompt Steering Controls")
+        audience = st.selectbox("Target Audience Level", ["Beginner", "Intermediate", "Advanced / Technical"])
+        response_format = st.selectbox("Response Format", ["Detailed Essay", "Bullet Point Summary", "Actionable Code Blocks"])
+        creativity = st.slider("Creativity (Temperature)", min_value=0.0, max_value=1.0, value=0.3, step=0.1)
         
-        st.header("Interaction Layer")
+        st.divider()
+        st.header("Cost Observability Dashboard")
+        st.metric("Total API Requests", "0")
+        st.metric("Token Consumption", "0 tokens")
 
+    # Main dashboard tabs
+    tab_library, tab_chat = st.tabs(["Corpus Library Management", "Context-Grounded Chat"])
+
+    with tab_library:
+        st.subheader("Ingest New Document Artifacts")
+        uploaded_file = st.file_uploader(
+            "Upload files to build your knowledge corpus", 
+            type=["txt", "md", "pdf", "py", "js"],
+            help="Supported formats: plain text, markdown, source code files, and PDFs."
+        )
+
+        if uploaded_file is not None:
+            col_btn1, col_btn2 = st.columns([1, 4])
+            if col_btn1.button("Ingest Document", use_container_width=True):
+                doc_id = str(uuid.uuid4())
+                ext = Path(uploaded_file.name).suffix.lower()
+                dest_path = DOCS_DIR / f"{doc_id}{ext}"
+                
+                # Save the raw file down to disk
+                with open(dest_path, "wb") as f:
+                    f.write(uploaded_file.getvalue())
+
+                # Grab sizing and setup structural fields
+                size_bytes = len(uploaded_file.getvalue())
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                
+                # Create a small text preview for the UI card
+                raw_text = extract_all_text(dest_path)
+                preview_text = raw_text[:120] + "..." if len(raw_text) > 120 else raw_text
+
+                # 1. Update relational metadata table
+                add_document_to_db(
+                    doc_id=doc_id,
+                    name=uploaded_file.name.split(".")[0],
+                    filename=uploaded_file.name,
+                    path=dest_path,
+                    file_type="Source Code" if ext in [".py", ".js"] else "Standard Text",
+                    ext=ext,
+                    size=size_bytes,
+                    uploaded_at=timestamp,
+                    preview=preview_text if preview_text.strip() else "Binary/Empty content parsed.",
+                    status="Processed Successfully"
+                )
+
+                # 2. Run chunking text pipeline immediately
+                with st.spinner("Executing pipeline: parsing, splitting, and storing text chunks..."):
+                    process_and_store_chunks(doc_id, dest_path)
+
+                st.success(f"Successfully processed and chunked: {uploaded_file.name}")
+                st.rerun()
+
+        st.divider()
+        st.subheader("Active Knowledge Base Corpus")
+
+        meta = load_metadata()
+
+        if not meta:
+            st.info("Your document library is currently empty. Upload a file above to activate your data processing pipeline.")
+        else:
+            for idx, item in enumerate(meta):
+                with st.container():
+                    # Visual Card Layout matching your colleague's initial template
+                    display_name = clean_display_name(item.get('filename', ''))
+                    st.markdown(f"### {display_name}")
+                    
+                    col1, col2, col3, col4 = st.columns([1.5, 3.5, 2.5, 0.5])
+                    
+                    # Column 1: Active Selection Toggle Switch
+                    is_active = col1.checkbox("Active Context", value=bool(item.get("active")), key=f"act_{item['id']}")
+                    if is_active != bool(item.get("active")):
+                        toggle_document_active(item['id'], item.get("active"))
+                        st.rerun()
+                    
+                    # Column 2: Context Preview snippet (limit to two lines)
+                    preview_text = item.get('preview', 'No preview available')
+                    formatted_preview = format_preview_for_ui(preview_text, max_lines=2)
+                    col2.markdown("**Preview:**")
+                    col2.write(formatted_preview)
+                    
+                    # Column 3: Metrics details
+                    col3.caption(f"Uploaded: {item['uploaded_at']}  \n⚖️ Size: {item['size']/1024:.2f} KB | Format: `{item['ext']}`")
+                    
+                    # Column 4: Document Wipe Actions
+                    if col4.button("🗑️", key=f"del_{item['id']}", help="Delete from library"):
+                        if os.path.exists(item["path"]):
+                            os.remove(item["path"])
+                        delete_document_from_db(item['id'])
+                        st.warning(f"Removed {item['filename']} from database.")
+                        st.rerun()
+                st.divider()
+
+    with tab_chat:
+        st.subheader("Grounded RAG Exploration Arena")
+        
         system_prompt = st.text_area(
             "System Prompt / Persona Instructions",
             value="You are a helpful AI assistant analyzing the active document corpus. Use the provided context to answer user queries accurately.",
@@ -370,10 +315,9 @@ def main():
         if active_meta:
             st.caption(f"Currently querying across **{len(active_meta)}** active document(s).")
         else:
-            st.warning("⚠️ No documents are marked 'Active' in the library. Gemini will answer without local context.")
+            st.warning("No documents are marked 'Active' in the library. Gemini will answer without local context.")
             
         user_query = st.text_input("Ask a question about your corpus:", placeholder="e.g., Summarize the main constraints found in these files...")
-        
 
         if st.button("Generate Answer", use_container_width=True):
             if not user_query.strip():
@@ -381,7 +325,6 @@ def main():
             else:
                 with st.spinner("Retrieving relevant context and invoking Gemini API..."):
                     st.info("Frontend captured query perfectly! Ready to pass to Google Gemini API.")
-                    
                     st.markdown("### AI Response")
                     st.write("*(Gemini API response will render here once backend connection is coded in the next step!)*")
 
