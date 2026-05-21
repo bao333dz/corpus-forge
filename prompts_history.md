@@ -74,3 +74,6 @@
 ### 22-05-2026 00:08
 - **Prompt**: do it so that the default how a file name should be displayed
 
+### 22-05-2026 00:10
+- **Prompt**: is my python connected to a chromadb?
+

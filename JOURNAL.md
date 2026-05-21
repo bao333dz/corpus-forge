@@ -192,6 +192,17 @@
 - **Context and Reasons for Changes**: User requested removing the opaque hex prefix from file names for readability. The rename keeps the `id` intact; only the visible filename/path were changed.
 
 ### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 22-05-2026 00:20
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: do it so that the default how a file name should be displayed
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5 mini
+- **Socratic Mode**: ON
+- **Changes Made**: Added `clean_display_name()` helper to `app.py` and updated the document listing to show filenames with leading 32-character hex prefixes removed (if present), improving readability without changing stored filenames.
+- **Context and Reasons for Changes**: User preference is to display human-friendly filenames by default. The change is UI-only; underlying filenames and DB entries remain unchanged unless explicitly renamed.
+
+### **New Interaction**
 - **Hook Version**: 1.02
 - **Date**: 22-05-2026 00:01
 - **Prompt**: help me with the interface, limit preview text to two lines only, then represent the rest as ... (number of lines rest)
@@ -205,3 +216,8 @@
 - **Hook Version**: 1.02
 - **Date**: 22-05-2026 00:08
 - **Prompt**: do it so that the default how a file name should be displayed
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 22-05-2026 00:10
+- **Prompt**: is my python connected to a chromadb?
