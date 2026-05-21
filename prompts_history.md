@@ -53,3 +53,6 @@
 ### 21-05-2026 22:54
 - **Prompt**: give the preview button the same height as the Delete button, and decrease the letters size
 
+### 21-05-2026 23:21
+- **Prompt**: i am switching from json to sql, please help me with it
+
