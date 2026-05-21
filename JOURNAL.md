@@ -101,6 +101,22 @@
 - **Context and Reasons for Changes**: User requested a longer Preview button. The simplest, robust approach is to increase the global button minimum width via the injected CSS; this keeps styling consistent and avoids complex per-button selectors.
 
 ### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 21-05-2026 22:56
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: i dont like it, revert it back
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5 mini
+- **Socratic Mode**: ON
+- **Changes Made**: Reverted the earlier CSS change in `app.py` so buttons return to their previous sizing (removed `min-width` and extra padding).
+- **Context and Reasons for Changes**: User preferred the original button sizing; reverted the global button style to avoid altering Streamlit's default button layouts.
+
+### **New Interaction**
 - **Hook Version**: 1.02
 - **Date**: 21-05-2026 22:51
 - **Prompt**: i dont like it, revert it back
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 21-05-2026 22:54
+- **Prompt**: give the preview button the same height as the Delete button, and decrease the letters size

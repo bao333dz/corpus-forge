@@ -50,3 +50,6 @@
 ### 21-05-2026 22:51
 - **Prompt**: i dont like it, revert it back
 
+### 21-05-2026 22:54
+- **Prompt**: give the preview button the same height as the Delete button, and decrease the letters size
+
