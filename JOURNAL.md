@@ -112,6 +112,17 @@
 - **Context and Reasons for Changes**: User preferred the original button sizing; reverted the global button style to avoid altering Streamlit's default button layouts.
 
 ### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 21-05-2026 23:05
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: i am switching from json to sql, please help me with it
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5 mini
+- **Socratic Mode**: ON
+- **Changes Made**: Converted storage to SQLite: updated schema, added DB helper functions, switched upload/delete/toggle to use DB, and added a migration step to import existing `data/docs.json` into the DB (and backed up the JSON file).
+- **Context and Reasons for Changes**: The user requested moving from JSON-based metadata to SQL. This change centralizes metadata, supports queries, and preserves existing entries via an automatic migration.
+
+### **New Interaction**
 - **Hook Version**: 1.02
 - **Date**: 21-05-2026 22:51
 - **Prompt**: i dont like it, revert it back

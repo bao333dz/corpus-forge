@@ -1,5 +1,6 @@
 import streamlit as st
 import os
+import sqlite3
 import json
 import uuid
 from datetime import datetime
@@ -13,27 +14,117 @@ except Exception:
 BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
 DOCS_DIR = DATA_DIR / "docs"
-METADATA_FILE = DATA_DIR / "docs.json"
+DB_FILE = DATA_DIR / "corpus_forge.db"
 
 
-def ensure_dirs():
+def init_db():
     DATA_DIR.mkdir(exist_ok=True)
     DOCS_DIR.mkdir(exist_ok=True)
+    
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS documents (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            filename TEXT NOT NULL,
+            path TEXT NOT NULL,
+            type TEXT,
+            ext TEXT,
+            size INTEGER,
+            uploaded_at TEXT,
+            preview TEXT,
+            status TEXT,
+            active INTEGER DEFAULT 0
+        )
+    """)
+    conn.commit()
+    conn.close()
+
+    # migrate existing JSON metadata if present
+    old_meta = DATA_DIR / "docs.json"
+    try:
+        if old_meta.exists():
+            with open(old_meta, "r", encoding="utf-8") as f:
+                items = json.load(f) or []
+            if items:
+                conn = sqlite3.connect(DB_FILE)
+                cursor = conn.cursor()
+                for m in items:
+                    # skip if already present
+                    cursor.execute("SELECT 1 FROM documents WHERE id = ?", (m.get("id"),))
+                    if cursor.fetchone():
+                        continue
+                    filename = m.get("filename") or f"{m.get('id')}_{m.get('name')}"
+                    path = DOCS_DIR / filename
+                    cursor.execute(
+                        "INSERT OR IGNORE INTO documents (id, name, filename, path, type, ext, size, uploaded_at, preview, status, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                        (
+                            m.get("id"),
+                            m.get("name"),
+                            filename,
+                            str(path),
+                            m.get("type"),
+                            m.get("ext"),
+                            m.get("size"),
+                            m.get("uploaded_at"),
+                            m.get("preview"),
+                            m.get("status"),
+                            1 if m.get("active") else 0,
+                        ),
+                    )
+                conn.commit()
+                conn.close()
+            # backup old metadata file to avoid re-import
+            try:
+                old_meta.rename(DATA_DIR / "docs.json.bak")
+            except Exception:
+                pass
+    except Exception:
+        # non-critical; continue silently
+        pass
 
 
 def load_metadata():
-    if not METADATA_FILE.exists():
+    if not DB_FILE.exists():
         return []
-    try:
-        with open(METADATA_FILE, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except Exception:
-        return []
+    conn = sqlite3.connect(DB_FILE)
+    conn.row_factory = sqlite3.Row 
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM documents")
+    rows = cursor.fetchall()
+    conn.close()
+    
+    return [dict(row) for row in rows]
 
 
-def save_metadata(meta):
-    with open(METADATA_FILE, "w", encoding="utf-8") as f:
-        json.dump(meta, f, ensure_ascii=False, indent=2)
+def add_document_to_db(doc_id, name, filename, path, doc_type, ext, size, uploaded_at, preview, status, active=0):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO documents (id, name, filename, path, type, ext, size, uploaded_at, preview, status, active) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (doc_id, name, filename, str(path), doc_type, ext, size, uploaded_at, preview, status, active)
+    )
+    conn.commit()
+    conn.close()
+
+
+def toggle_document_active(doc_id, current_active_status):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    # Flip the status: if it's 1 it becomes 0, if it's 0 it becomes 1
+    new_status = 0 if current_active_status == 1 else 1
+    cursor.execute("UPDATE documents SET active = ? WHERE id = ?", (new_status, doc_id))
+    conn.commit()
+    conn.close()
+
+
+def delete_document_from_db(doc_id):
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
+    conn.commit()
+    conn.close()
 
 
 def extract_text_from_pdf(path, max_chars=2000):
@@ -83,6 +174,7 @@ def save_upload(uploaded_file):
     else:
         doc_type = "other"
 
+    uploaded_at = datetime.utcnow().isoformat() + "Z"
     meta = {
         "id": doc_id,
         "name": uploaded_file.name,
@@ -90,51 +182,63 @@ def save_upload(uploaded_file):
         "type": doc_type,
         "ext": ext,
         "size": uploaded_file.size,
-        "uploaded_at": datetime.utcnow().isoformat() + "Z",
+        "uploaded_at": uploaded_at,
         "status": "saved",
         "preview": preview,
         "active": False,
     }
-    all_meta = load_metadata()
-    all_meta.append(meta)
-    save_metadata(all_meta)
+
+    # persist to sqlite
+    add_document_to_db(
+        doc_id=doc_id,
+        name=uploaded_file.name,
+        filename=dest_name,
+        path=dest_path,
+        doc_type=doc_type,
+        ext=ext,
+        size=uploaded_file.size,
+        uploaded_at=uploaded_at,
+        preview=preview,
+        status="saved",
+        active=0,
+    )
+
     return meta
 
 
 def delete_doc(doc_id):
+    # find metadata for doc to delete file
     meta = load_metadata()
-    new_meta = []
-    for m in meta:
-        if m["id"] == doc_id:
-            # remove file
-            try:
-                p = DOCS_DIR / m["filename"]
-                if p.exists():
-                    p.unlink()
-            except Exception:
-                pass
-        else:
-            new_meta.append(m)
-    save_metadata(new_meta)
+    doc = next((m for m in meta if m["id"] == doc_id), None)
+    if doc:
+        try:
+            p = DOCS_DIR / doc.get("filename", "")
+            if p.exists():
+                p.unlink()
+        except Exception:
+            pass
+    # remove from DB
+    delete_document_from_db(doc_id)
 
 
 def toggle_active(doc_id, value):
-    meta = load_metadata()
-    for m in meta:
-        if m["id"] == doc_id:
-            m["active"] = value
-    save_metadata(meta)
+    # set active flag in DB
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("UPDATE documents SET active = ? WHERE id = ?", (1 if value else 0, doc_id))
+    conn.commit()
+    conn.close()
 
 
 def main():
-    ensure_dirs()
+    init_db()
     st.set_page_config(page_title="Corpus Forge — Upload", layout="wide")
 
     # Inject lightweight CSS for improved visuals
     st.markdown(
         """
         <style>
-        .stButton>button { background: linear-gradient(90deg,#06b6d4,#0ea5a4); color: white; border-radius:6px; }
+        .stButton>button { background: linear-gradient(90deg,#06b6d4,#0ea5a4); color: white; border-radius:6px; padding:6px 10px; font-size:13px; line-height:1.2; }
         .doc-row { border:1px solid #e6eef0; padding:10px; margin-bottom:8px; border-radius:6px; background:#fbfcfd }
         .doc-meta { color:#475569; font-size:13px }
         .summary { background:#f8fafc; padding:10px; border-radius:6px }
@@ -200,7 +304,7 @@ def main():
                         delete_doc(m["id"])
 
     with col2:
-        st.header("Preview & Actions")
+        st.header("Preview & Exploration")
         preview_id = st.session_state.get("preview_doc")
         meta = load_metadata()
         if preview_id:
@@ -216,30 +320,44 @@ def main():
                     doc.get("preview", "(no preview)"),
                     language="python" if doc["type"] == "code" else None,
                 )
-            elif doc["type"] == "pdf":
+            elif doc["type"] == ".pdf":
                 st.text_area(
                     "Preview (first pages)",
                     value=doc.get("preview", "(no preview)"),
-                    height=300,
+                    height=200,
                 )
-            else:
-                st.write("No preview available for this file type.")
+        else:
+            st.info("Select a document from the library to preview its contents.")
 
         st.markdown("---")
-        st.header("Actions")
-        st.write(
-            "Process documents to prepare for retrieval and AI (this prototype saves files and extracts basic preview)."
+        
+        st.header("Interaction Layer")
+
+        system_prompt = st.text_area(
+            "System Prompt / Persona Instructions",
+            value="You are a helpful AI assistant analyzing the active document corpus. Use the provided context to answer user queries accurately.",
+            help="This configures the behavior guidelines for the Gemini model."
         )
-        if st.button("Process all (prototype)"):
-            st.success("Processing completed (prototype).")
+        
+        st.subheader("Retrieval Settings")
+        active_meta = [m for m in meta if m.get("active")]
+        if active_meta:
+            st.caption(f"Currently querying across **{len(active_meta)}** active document(s).")
+        else:
+            st.warning("⚠️ No documents are marked 'Active' in the library. Gemini will answer without local context.")
+            
+        user_query = st.text_input("Ask a question about your corpus:", placeholder="e.g., Summarize the main constraints found in these files...")
+        
 
-        st.markdown("---")
-        st.header("Summary")
-        meta = load_metadata()
-        total = len(meta)
-        active = sum(1 for m in meta if m.get("active"))
-        st.write(f"Total documents: {total}")
-        st.write(f"Active documents: {active}")
+        if st.button("Generate Answer", use_container_width=True):
+            if not user_query.strip():
+                st.error("Please enter a query first!")
+            else:
+                with st.spinner("Retrieving relevant context and invoking Gemini API..."):
+                    st.info("Frontend captured query perfectly! Ready to pass to Google Gemini API.")
+                    
+                    st.markdown("### AI Response")
+                    st.write("*(Gemini API response will render here once backend connection is coded in the next step!)*")
 
 
 if __name__ == "__main__":
