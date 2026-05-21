@@ -170,6 +170,22 @@
 - **Context and Reasons for Changes**: The app failed to start due to an accidental insertion of escaped quotes in source code. Correcting the list comprehension restores script execution.
 
 ### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 22-05-2026 00:05
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: help me with the interface, limit preview text to two lines only, then represent the rest as ... (number of lines rest)
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5 mini
+- **Socratic Mode**: ON
+- **Changes Made**: Added `format_preview_for_ui()` helper and updated the document listing to display only the first two lines of the preview with an appended `... (N more lines)` indicator. Kept stored previews unchanged.
+- **Context and Reasons for Changes**: User requested tighter UI previews while preserving full text in storage and chunking pipeline.
+
+### **New Interaction**
 - **Hook Version**: 1.02
 - **Date**: 22-05-2026 00:01
 - **Prompt**: help me with the interface, limit preview text to two lines only, then represent the rest as ... (number of lines rest)
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 22-05-2026 00:05
+- **Prompt**: ec289af82bcf4970818a1ddd595d570b_Project Corpuse Forge - Executive Summary.pd  what the weird serie of number in the file name, fix it please
