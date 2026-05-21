@@ -88,3 +88,19 @@
 - **Hook Version**: 1.02
 - **Date**: 21-05-2026 22:50
 - **Prompt**: can you make the preview button a bit longer
+
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 21-05-2026 22:52
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: can you make the preview button a bit longer
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5 mini
+- **Socratic Mode**: ON
+- **Changes Made**: Updated `app.py` CSS to increase button `min-width` to `140px` and adjusted padding so the Preview button appears longer.
+- **Context and Reasons for Changes**: User requested a longer Preview button. The simplest, robust approach is to increase the global button minimum width via the injected CSS; this keeps styling consistent and avoids complex per-button selectors.
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 21-05-2026 22:51
+- **Prompt**: i dont like it, revert it back

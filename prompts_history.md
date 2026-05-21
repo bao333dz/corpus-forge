@@ -47,3 +47,6 @@
 ### 21-05-2026 22:50
 - **Prompt**: can you make the preview button a bit longer
 
+### 21-05-2026 22:51
+- **Prompt**: i dont like it, revert it back
+
