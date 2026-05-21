@@ -41,3 +41,6 @@
 ### 18-05-2026 14:20
 - **Prompt**: why cant i run this file
 
+### 18-05-2026 14:22
+- **Prompt**: help me fix it
+
