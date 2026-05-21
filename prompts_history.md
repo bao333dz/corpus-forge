@@ -65,3 +65,6 @@
 ### 21-05-2026 23:58
 - **Prompt**: fix the bug for me
 
+### 22-05-2026 00:01
+- **Prompt**: help me with the interface, limit preview text to two lines only, then represent the rest as ... (number of lines rest)
+
