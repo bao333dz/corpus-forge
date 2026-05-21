@@ -181,6 +181,17 @@
 - **Context and Reasons for Changes**: User requested tighter UI previews while preserving full text in storage and chunking pipeline.
 
 ### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 22-05-2026 00:12
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: ec289af82bcf4970818a1ddd595d570b_Project Corpuse Forge - Executive Summary.pd
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5 mini
+- **Socratic Mode**: ON
+- **Changes Made**: Renamed `data/docs/ec289af82bcf4970818a1ddd595d570b_Project Corpuse Forge - Executive Summary.pdf` to `Project Corpuse Forge - Executive Summary.pdf` and updated the corresponding `documents` row in `data/corpus_forge.db` to match the new filename/path.
+- **Context and Reasons for Changes**: User requested removing the opaque hex prefix from file names for readability. The rename keeps the `id` intact; only the visible filename/path were changed.
+
+### **New Interaction**
 - **Hook Version**: 1.02
 - **Date**: 22-05-2026 00:01
 - **Prompt**: help me with the interface, limit preview text to two lines only, then represent the rest as ... (number of lines rest)
@@ -189,3 +200,8 @@
 - **Hook Version**: 1.02
 - **Date**: 22-05-2026 00:05
 - **Prompt**: ec289af82bcf4970818a1ddd595d570b_Project Corpuse Forge - Executive Summary.pd  what the weird serie of number in the file name, fix it please
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 22-05-2026 00:08
+- **Prompt**: do it so that the default how a file name should be displayed

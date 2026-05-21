@@ -71,3 +71,6 @@
 ### 22-05-2026 00:05
 - **Prompt**: ec289af82bcf4970818a1ddd595d570b_Project Corpuse Forge - Executive Summary.pd  what the weird serie of number in the file name, fix it please
 
+### 22-05-2026 00:08
+- **Prompt**: do it so that the default how a file name should be displayed
+
