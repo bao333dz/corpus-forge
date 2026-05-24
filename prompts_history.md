@@ -122,3 +122,6 @@
 ### 24-05-2026 22:09
 - **Prompt**: models/gemini-embedding-001 ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent'] models/gemini-embedding-2-preview ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent'] models/gemini-embedding-2 ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent']  this is what i got
 
+### 24-05-2026 22:11
+- **Prompt**: Gemini API call error: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.
+

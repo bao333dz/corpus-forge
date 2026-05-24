@@ -407,3 +407,19 @@ I got this error while running
 - **Hook Version**: 1.02
 - **Date**: 24-05-2026 22:09
 - **Prompt**: models/gemini-embedding-001 ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent'] models/gemini-embedding-2-preview ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent'] models/gemini-embedding-2 ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent']  this is what i got
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 24-05-2026 22:09
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: models/gemini-embedding-001 ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent'] models/gemini-embedding-2-preview ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent'] models/gemini-embedding-2 ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent'] this is what i got
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5.2-Codex
+- **Socratic Mode**: OFF
+- **Changes Made**: Updated default embedding model to a supported Gemini embedding model.
+- **Context and Reasons for Changes**: User listed available embedding models; default now matches a supported model for embedContent.
+
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 24-05-2026 22:11
+- **Prompt**: Gemini API call error: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.
