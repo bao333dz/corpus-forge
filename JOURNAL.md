@@ -246,3 +246,19 @@
 - **Hook Version**: 1.02
 - **Date**: 24-05-2026 20:38
 - **Prompt**: Embeddings written to Chroma only when the user queries
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 24-05-2026 20:38
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: Embeddings written to Chroma only when the user queries
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5.2-Codex
+- **Socratic Mode**: ON
+- **Changes Made**: Added lazy-embedding helpers and invoked them during query; guarded against missing Gemini API key; surfaced retrieved context.
+- **Context and Reasons for Changes**: User requested embeddings be written to Chroma only when querying, so embeddings are created on demand for active documents.
+
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 24-05-2026 20:43
+- **Prompt**: can you run the virtual enviroment for me?

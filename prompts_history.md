@@ -86,3 +86,6 @@
 ### 24-05-2026 20:38
 - **Prompt**: Embeddings written to Chroma only when the user queries
 
+### 24-05-2026 20:43
+- **Prompt**: can you run the virtual enviroment for me?
+
