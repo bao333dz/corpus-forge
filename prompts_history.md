@@ -110,3 +110,6 @@
 ### 24-05-2026 21:50
 - **Prompt**: check and delete any unused function, abundant codes or any things that are unrelated to the logic and workflow of the app in app.py and vector_store.py
 
+### 24-05-2026 21:52
+- **Prompt**: document this file and update the readme.md
+

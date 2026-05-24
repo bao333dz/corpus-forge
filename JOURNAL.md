@@ -341,3 +341,19 @@
 - **Hook Version**: 1.02
 - **Date**: 24-05-2026 21:50
 - **Prompt**: check and delete any unused function, abundant codes or any things that are unrelated to the logic and workflow of the app in app.py and vector_store.py
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 24-05-2026 21:51
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: check and delete any unused function, abundant codes or any things that are unrelated to the logic and workflow of the app in app.py and vector_store.py
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5.2-Codex
+- **Socratic Mode**: OFF
+- **Changes Made**: Removed a debug-only Python path print and an unused Streamlit column variable; removed unused Settings import in vector store.
+- **Context and Reasons for Changes**: Cleaned unused/debug code and imports while keeping app workflow intact.
+
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 24-05-2026 21:52
+- **Prompt**: document this file and update the readme.md
