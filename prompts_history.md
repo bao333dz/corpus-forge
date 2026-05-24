@@ -104,3 +104,6 @@
 ### 24-05-2026 20:49
 - **Prompt**: File "C:\Users\admin\Documents\GitHub\corpus-forge\app.py", line 8, in <module>     import google.generativeai as genai I got this error when i ran the app tho
 
+### 24-05-2026 20:51
+- **Prompt**: i said requirement already satisfied but it still not working
+
