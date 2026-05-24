@@ -119,3 +119,6 @@
 ### 24-05-2026 22:07
 - **Prompt**: google.api_core.exceptions.NotFound: 404 models/embedding-001 is not found for API version v1beta, or is not supported for embedContent. Call ModelService.ListModels to see the list of available models and their supported methods.  i still get this error, how to call ModelService.ListModels
 
+### 24-05-2026 22:09
+- **Prompt**: models/gemini-embedding-001 ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent'] models/gemini-embedding-2-preview ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent'] models/gemini-embedding-2 ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent']  this is what i got
+
