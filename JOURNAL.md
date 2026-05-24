@@ -439,3 +439,14 @@ I got this error while running
 - **Hook Version**: 1.02
 - **Date**: 24-05-2026 22:21
 - **Prompt**: Gemini API call error: no such table: cost_logs
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 24-05-2026 22:21
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: Gemini API call error: no such table: cost_logs
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5.2-Codex
+- **Socratic Mode**: OFF
+- **Changes Made**: Added missing cost_logs table to the SQLite initialization.
+- **Context and Reasons for Changes**: Token logging queries failed because the table was never created; init now creates it.
+

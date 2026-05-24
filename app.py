@@ -1,11 +1,14 @@
+"""Streamlit UI for document ingestion, context retrieval, and Gemini workflows."""
+
 import streamlit as st
 import os
 import sqlite3
-import json
 import uuid
 from datetime import datetime
 from pathlib import Path
 import re
+import google.generativeai as genai
+from vector_store import ensure_document_embeddings, delete_document_embeddings, query_active_context
 
 # Try importing PyPDF2 safely for PDF processing
 try:
@@ -17,6 +20,7 @@ BASE_DIR = Path(__file__).parent
 DATA_DIR = BASE_DIR / "data"
 DOCS_DIR = DATA_DIR / "docs"
 DB_FILE = DATA_DIR / "corpus_forge.db"
+GENERATIVE_MODEL = os.getenv("GENERATIVE_MODEL", "models/gemini-2.5-flash")
 
 def init_db():
     """Ensures directories exist and initializes the SQLite database tables."""
@@ -53,13 +57,30 @@ def init_db():
             FOREIGN KEY (document_id) REFERENCES documents(id) ON DELETE CASCADE
         )
     """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS artifacts (
+            id TEXT PRIMARY KEY,
+            type TEXT NOT NULL,
+            content TEXT NOT NULL,
+            created_at TEXT NOT NULL
+        )
+    """)
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS cost_logs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            timestamp TEXT NOT NULL,
+            prompt_tokens INTEGER,
+            completion_tokens INTEGER,
+            total_tokens INTEGER
+        )
+    """)
     
     conn.commit()
     conn.close()
 
 
 def load_metadata():
-    """Fetches all documents from the SQLite database."""
+    """Return all document metadata rows from SQLite."""
     if not DB_FILE.exists():
         return []
     conn = sqlite3.connect(DB_FILE)
@@ -98,11 +119,56 @@ def delete_document_from_db(doc_id):
     conn = sqlite3.connect(DB_FILE)
     cursor = conn.cursor()
     cursor.execute("DELETE FROM documents WHERE id = ?", (doc_id,))
-    cursor.execute("DELETE FROM document_chunks WHERE document_id = ?", (doc_id,))
     conn.commit()
     conn.close()
 
+def save_artifact(artifact_type, content):
+    """Save (Flashcard/Quiz/Report) to database."""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO artifacts (id, type, content, created_at)
+        VALUES (?, ?, ?, ?)
+    """, (str(uuid.uuid4()), artifact_type, content, datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    conn.commit()
+    conn.close()
 
+def load_artifacts(artifact_type):
+    """Load saved artifacts (flashcards, quizzes, reports) by type."""
+    if not DB_FILE.exists():
+        return []
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("SELECT content, created_at FROM artifacts WHERE type = ? ORDER BY created_at DESC", (artifact_type,))
+    rows = cursor.fetchall()
+    conn.close()
+    return rows
+
+def log_token_usage(prompt_tokens, completion_tokens, total_tokens):
+    """Logs token usage into SQLite for Cost Observability."""
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    cursor.execute("""
+        INSERT INTO cost_logs (timestamp, prompt_tokens, completion_tokens, total_tokens)
+        VALUES (?, ?, ?, ?)
+    """, (datetime.utcnow().isoformat(), prompt_tokens, completion_tokens, total_tokens))
+    conn.commit()
+    conn.close()
+
+def get_aggregated_costs():
+    """Retrieves total requests and token consumption."""
+    if not DB_FILE.exists():
+        return 0, 0
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT COUNT(*), SUM(total_tokens) FROM cost_logs")
+        row = cursor.fetchone()
+        return (row[0] or 0, row[1] or 0)
+    except Exception:
+        return 0, 0
+    finally:
+        conn.close()
 
 def extract_all_text(file_path):
     """Detects file extension and extracts pure text string."""
@@ -122,15 +188,9 @@ def extract_all_text(file_path):
             return "PyPDF2 library is missing. Cannot parse PDF contents."
         try:
             reader = PyPDF2.PdfReader(str(file_path))
-            text_parts = []
-            for page in reader.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    text_parts.append(page_text)
-            return "\n".join(text_parts)
+            return "\n".join([page.extract_text() for page in reader.pages if page.extract_text()])
         except Exception as e:
             return f"Error reading PDF file: {str(e)}"
-            
     return ""
 
 
@@ -185,8 +245,43 @@ def process_and_store_chunks(doc_id, file_path):
     conn.commit()
     conn.close()
 
+def ensure_all_active_embeddings(active_meta):
+    """
+    Safely checks and generates embeddings for all currently active documents.
+    Prevents querying an empty vector database.
+    """
+    for doc in active_meta:
+        # Ensure the document has been embedded into ChromaDB
+        ensure_document_embeddings(doc["id"], doc["filename"], extract_all_text(doc["path"]))
+
+def generate_gemini_content(prompt, context, system_prompt, temperature):
+    """Call Gemini with context and return the response text plus success flag."""
+    if "GEMINI_API_KEY" not in os.environ:
+        return "No API KEY", 0
+    full_prompt = f"Context from documents:\n{context}\n\nUser Request: {prompt}"
+    
+    try:
+        model = genai.GenerativeModel(
+            model_name=GENERATIVE_MODEL,
+            system_instruction=system_prompt,
+            generation_config={"temperature": temperature}
+        )
+        response = model.generate_content(full_prompt)
+        
+        # Log token usage nếu có
+        if hasattr(response, 'usage_metadata'):
+            log_token_usage(
+                response.usage_metadata.prompt_token_count,
+                response.usage_metadata.candidates_token_count,
+                response.usage_metadata.total_token_count
+            )
+            
+        return response.text, 1
+    except Exception as e:
+        return f"Gemini API call error: {str(e)}", 0
 
 def main():
+    """Run the Streamlit app and render all UI sections."""
     # Automatically initialize tables on start
     init_db()
     
@@ -204,11 +299,12 @@ def main():
         audience = st.selectbox("Target Audience Level", ["Beginner", "Intermediate", "Advanced / Technical"])
         response_format = st.selectbox("Response Format", ["Detailed Essay", "Bullet Point Summary", "Actionable Code Blocks"])
         creativity = st.slider("Creativity (Temperature)", min_value=0.0, max_value=1.0, value=0.3, step=0.1)
+        total_req, total_tok = get_aggregated_costs()
         
         st.divider()
         st.header("Cost Observability Dashboard")
-        st.metric("Total API Requests", "0")
-        st.metric("Token Consumption", "0 tokens")
+        st.metric("Total API Requests", total_req)
+        st.metric("Token Consumption", total_tok)
 
     # Main dashboard tabs
     tab_library, tab_chat = st.tabs(["Corpus Library Management", "Context-Grounded Chat"])
@@ -222,7 +318,7 @@ def main():
         )
 
         if uploaded_file is not None:
-            col_btn1, col_btn2 = st.columns([1, 4])
+            col_btn1, _ = st.columns([1, 4])
             if col_btn1.button("Ingest Document", use_container_width=True):
                 doc_id = str(uuid.uuid4())
                 ext = Path(uploaded_file.name).suffix.lower()
@@ -297,36 +393,131 @@ def main():
                         if os.path.exists(item["path"]):
                             os.remove(item["path"])
                         delete_document_from_db(item['id'])
+                        delete_document_embeddings(item['id'])
                         st.warning(f"Removed {item['filename']} from database.")
                         st.rerun()
                 st.divider()
 
     with tab_chat:
-        st.subheader("Grounded RAG Exploration Arena")
+        st.subheader("Retrieval-Grounded AI Workflows")
         
-        system_prompt = st.text_area(
-            "System Prompt / Persona Instructions",
-            value="You are a helpful AI assistant analyzing the active document corpus. Use the provided context to answer user queries accurately.",
-            help="This configures the behavior guidelines for the Gemini model."
-        )
-        
-        st.subheader("Retrieval Settings")
         active_meta = [m for m in meta if m.get("active")]
-        if active_meta:
-            st.caption(f"Currently querying across **{len(active_meta)}** active document(s).")
+        active_doc_ids = [doc.get("id") for doc in active_meta]
+        has_source_code = any(doc.get("type") == "Source Code" for doc in active_meta)
+        
+        if not active_meta:
+            st.warning("⚠️ No active documents found. Please go to the Library tab to enable your Active Context.")
         else:
-            st.warning("No documents are marked 'Active' in the library. Gemini will answer without local context.")
+            st.caption(f"Currently utilizing **{len(active_meta)}** document(s) as context.")
             
-        user_query = st.text_input("Ask a question about your corpus:", placeholder="e.g., Summarize the main constraints found in these files...")
+            # Sub-tabs layout mapping out the course requirements
+            sub_chat, sub_flash, sub_quiz, sub_code = st.tabs(["💬 Chat", "🗂️ Flashcards", "📝 Quizzes", "💻 Code Analysis"])
 
-        if st.button("Generate Answer", use_container_width=True):
-            if not user_query.strip():
-                st.error("Please enter a query first!")
-            else:
-                with st.spinner("Retrieving relevant context and invoking Gemini API..."):
-                    st.info("Frontend captured query perfectly! Ready to pass to Google Gemini API.")
-                    st.markdown("### AI Response")
-                    st.write("*(Gemini API response will render here once backend connection is coded in the next step!)*")
+            # Base Persona matching the Prompt Steering variables from the Sidebar
+            base_system_prompt = f"""
+            You are an AI assistant analyzing the active document corpus. 
+            Audience Level: {audience}. 
+            Format Style: {response_format}.
+            Strictly base your answers on the provided context. If information is missing, state it clearly.
+            """
+
+            # ================= 1. CHAT WORKFLOW =================
+            with sub_chat:
+                user_query = st.text_input("Ask anything about your documents:")
+                if st.button("Generate Answer", key="btn_chat", use_container_width=True):
+                    if user_query:
+                        with st.spinner("Retrieving context and invoking Gemini API..."):
+                            # Lazy check to guarantee embeddings exist
+                            ensure_all_active_embeddings(active_meta)
+                            
+                            context = query_active_context(user_query, active_doc_ids)
+                            answer, success = generate_gemini_content(user_query, context, base_system_prompt, creativity)
+                            
+                            st.markdown("### AI Response")
+                            st.write(answer)
+                            with st.expander("View Retrieved Context"):
+                                st.write(context)
+
+            # ================= 2. FLASHCARDS WORKFLOW =================
+            with sub_flash:
+                st.write("Automatically extract and compile study flashcards from your corpus.")
+                if st.button("Generate New Flashcards", key="btn_flash", use_container_width=True):
+                    with st.spinner("Synthesizing flashcards..."):
+                        ensure_all_active_embeddings(active_meta)
+                        context = query_active_context("Summarize key concepts", active_doc_ids, n_results=5)
+                        prompt = "Extract key terms and concepts. Generate 5 Flashcards formatted cleanly in Markdown (Format: **Q:** [Question] \n **A:** [Answer])."
+                        
+                        flashcards, success = generate_gemini_content(prompt, context, base_system_prompt, creativity)
+                        if success:
+                            save_artifact("flashcard", flashcards)
+                            st.success("Flashcards successfully generated and archived!")
+                            st.rerun()
+                
+                # Persistence History render
+                saved_flashcards = load_artifacts("flashcard")
+                for i, (content, time) in enumerate(saved_flashcards):
+                    with st.expander(f"Flashcard Deck - {time}"):
+                        st.markdown(content)
+
+            # ================= 3. QUIZZES WORKFLOW =================
+            with sub_quiz:
+                st.write("Generate interactive multiple-choice assessment tests based on your data.")
+                if st.button("Generate New Quiz", key="btn_quiz", use_container_width=True):
+                    with st.spinner("Generating quiz questions..."):
+                        ensure_all_active_embeddings(active_meta)
+                        context = query_active_context("Extract important facts and logic", active_doc_ids, n_results=5)
+                        prompt = "Generate a multiple-choice quiz with 3 questions based on the context. Provide the correct answers at the very end."
+                        
+                        quiz, success = generate_gemini_content(prompt, context, base_system_prompt, creativity)
+                        if success:
+                            save_artifact("quiz", quiz)
+                            st.success("Quiz successfully generated and archived!")
+                            st.rerun()
+
+                # Persistence History render
+                saved_quizzes = load_artifacts("quiz")
+                for i, (content, time) in enumerate(saved_quizzes):
+                    with st.expander(f"Quiz Evaluation - {time}"):
+                        st.markdown(content)
+
+            # ================= 4. SOURCE CODE SPECIALIZED WORKFLOW =================
+            with sub_code:
+                if not has_source_code:
+                    st.info("This advanced section unlocks automatically when you set a source code file (.py, .js, etc.) as part of your Active Context.")
+                else:
+                    st.write("Deep engineering analysis for your source code infrastructure.")
+                    col1, col2 = st.columns(2)
+                    
+                    # 4.1. Code Review Report
+                    if col1.button("Generate Code Review Report", use_container_width=True):
+                        with st.spinner("Reviewing syntax structures and testing code quality..."):
+                            ensure_all_active_embeddings(active_meta)
+                            context = query_active_context("source code functions classes", active_doc_ids, n_results=5)
+                            prompt = "Analyze the provided source code context. Generate a Code Review Report focusing on potential bugs, security vulnerabilities, and code quality improvements."
+                            report, success = generate_gemini_content(prompt, context, base_system_prompt, creativity)
+                            if success:
+                                save_artifact("code_review", report)
+                                st.rerun()
+
+                    # 4.2. Architecture Report
+                    if col2.button("Generate Architecture Report", use_container_width=True):
+                        with st.spinner("Mapping execution flow charts and abstract data patterns..."):
+                            ensure_all_active_embeddings(active_meta)
+                            context = query_active_context("architecture design patterns control flow", active_doc_ids, n_results=5)
+                            prompt = "Analyze the provided source code context. Generate an Architecture and Control Flow Report explaining how the components interact and the overall system design."
+                            report, success = generate_gemini_content(prompt, context, base_system_prompt, creativity)
+                            if success:
+                                save_artifact("architecture", report)
+                                st.rerun()
+                                
+                    # Persistence History render
+                    st.divider()
+                    st.markdown("#### Archived System Reports")
+                    for r_type, icon in [("code_review", "🐛 Code Review"), ("architecture", "🏗️ Architecture")]:
+                        saved_reports = load_artifacts(r_type)
+                        for content, time in saved_reports:
+                            with st.expander(f"{icon} Report - {time}"):
+                                st.markdown(content)
 
 
 if __name__ == "__main__":

@@ -1,20 +1,29 @@
 # Corpus Forge — Streamlit Prototype
 
-This is a small Streamlit prototype implementing the Layer 1 document upload and management features for the Corpus Forge project.
+This Streamlit app handles document ingestion, local metadata storage, vector retrieval, and Gemini-powered workflows.
 
-Features:
-- Upload multiple documents (.txt, .md, .pdf, .py, .js, etc.)
-- Save uploaded files to `data/docs/`
-- Show document library with Active toggle, Preview and Delete
-- Basic preview extraction (text and PDF first pages)
+## Features
+- Upload documents (.txt, .md, .pdf, .py, .js, .json, .html, .css)
+- Store files in `data/docs/` and metadata in SQLite (`data/corpus_forge.db`)
+- Toggle active documents, preview snippets, and delete items
+- Lazy embeddings written to ChromaDB on query
+- Retrieval-grounded Gemini workflows (chat, flashcards, quizzes, code analysis)
 
-Run locally:
+## Run Locally
 
 ```bash
 python -m pip install -r requirements.txt
-streamlit run app.py
+python -m streamlit run app.py
 ```
 
-Notes:
-- This is an offline-first prototype. Metadata is stored at `data/docs.json` and files under `data/docs/`.
-- The `Process all` button in the UI is a placeholder for later ingestion/embedding steps.
+## Environment
+
+Set your Gemini key before running queries:
+
+```bash
+set GEMINI_API_KEY=your_key_here
+```
+
+## Notes
+- ChromaDB data is stored under `data/chroma_db/`.
+- SQLite tables are created automatically at startup.
