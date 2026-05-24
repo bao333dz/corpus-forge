@@ -92,3 +92,6 @@
 ### 24-05-2026 20:44
 - **Prompt**: how to turn off socratic mode?
 
+### 24-05-2026 20:44
+- **Prompt**: Stop being Socratic
+
