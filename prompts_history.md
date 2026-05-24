@@ -107,3 +107,6 @@
 ### 24-05-2026 20:51
 - **Prompt**: i said requirement already satisfied but it still not working
 
+### 24-05-2026 21:50
+- **Prompt**: check and delete any unused function, abundant codes or any things that are unrelated to the logic and workflow of the app in app.py and vector_store.py
+

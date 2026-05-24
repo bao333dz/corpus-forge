@@ -325,3 +325,19 @@
 - **Hook Version**: 1.02
 - **Date**: 24-05-2026 20:51
 - **Prompt**: i said requirement already satisfied but it still not working
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 24-05-2026 20:51
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: i said requirement already satisfied but it still not working
+- **CoPilot Mode**: Ask
+- **CoPilot Model**: GPT-5.2-Codex
+- **Socratic Mode**: OFF
+- **Changes Made**: No code changes.
+- **Context and Reasons for Changes**: Asked for the exact error output and how Streamlit is being launched to ensure the correct environment is used.
+
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 24-05-2026 21:50
+- **Prompt**: check and delete any unused function, abundant codes or any things that are unrelated to the logic and workflow of the app in app.py and vector_store.py
