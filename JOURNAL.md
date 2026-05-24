@@ -357,3 +357,19 @@
 - **Hook Version**: 1.02
 - **Date**: 24-05-2026 21:52
 - **Prompt**: document this file and update the readme.md
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 24-05-2026 21:52
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: document this file and update the readme.md
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5.2-Codex
+- **Socratic Mode**: OFF
+- **Changes Made**: Added concise module and function docstrings in app.py; updated README with current features, storage, and environment notes.
+- **Context and Reasons for Changes**: Documented the app and aligned README with current behavior and dependencies.
+
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 24-05-2026 22:04
+- **Prompt**: google.api_core.exceptions.NotFound: 404 models/text-embedding-004 is not found for API version v1beta, or is not supported for embedContent. Call ModelService.ListModels to see the list of available models and their supported methods.  I got this error while running

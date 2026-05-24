@@ -113,3 +113,6 @@
 ### 24-05-2026 21:52
 - **Prompt**: document this file and update the readme.md
 
+### 24-05-2026 22:04
+- **Prompt**: google.api_core.exceptions.NotFound: 404 models/text-embedding-004 is not found for API version v1beta, or is not supported for embedContent. Call ModelService.ListModels to see the list of available models and their supported methods.  I got this error while running
+
