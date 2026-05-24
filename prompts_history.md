@@ -83,3 +83,6 @@
 ### 24-05-2026 20:32
 - **Prompt**: can you check if my project runs well?
 
+### 24-05-2026 20:38
+- **Prompt**: Embeddings written to Chroma only when the user queries
+

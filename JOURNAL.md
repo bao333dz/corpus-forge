@@ -231,3 +231,18 @@
 - **Hook Version**: 1.02
 - **Date**: 24-05-2026 20:32
 - **Prompt**: can you check if my project runs well?
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 24-05-2026 20:33
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: can you check if my project runs well?
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5.2-Codex
+- **Socratic Mode**: ON
+- **Changes Made**: Added missing dependencies for Google GenAI and ChromaDB in requirements.
+- **Context and Reasons for Changes**: Streamlit crashed on import because google.generativeai was not installed; requirements now include the needed packages.
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 24-05-2026 20:38
+- **Prompt**: Embeddings written to Chroma only when the user queries
