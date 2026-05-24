@@ -89,3 +89,6 @@
 ### 24-05-2026 20:43
 - **Prompt**: can you run the virtual enviroment for me?
 
+### 24-05-2026 20:44
+- **Prompt**: how to turn off socratic mode?
+
