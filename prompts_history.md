@@ -125,3 +125,6 @@
 ### 24-05-2026 22:11
 - **Prompt**: Gemini API call error: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.
 
+### 24-05-2026 22:21
+- **Prompt**: Gemini API call error: no such table: cost_logs
+

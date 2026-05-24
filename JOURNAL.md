@@ -423,3 +423,19 @@ I got this error while running
 - **Hook Version**: 1.02
 - **Date**: 24-05-2026 22:11
 - **Prompt**: Gemini API call error: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.
+### **New Interaction**
+- **Agent Version**: 2.3
+- **Date**: 24-05-2026 22:11
+- **User**: tuan-minh.hoang@epita.fr
+- **Prompt**: Gemini API call error: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.
+- **CoPilot Mode**: Edit
+- **CoPilot Model**: GPT-5.2-Codex
+- **Socratic Mode**: OFF
+- **Changes Made**: Added GENERATIVE_MODEL env var to configure Gemini generation model.
+- **Context and Reasons for Changes**: The default model was not supported by the API; allowing override lets the user pick a supported model from listModels.
+
+
+### **New Interaction**
+- **Hook Version**: 1.02
+- **Date**: 24-05-2026 22:21
+- **Prompt**: Gemini API call error: no such table: cost_logs
