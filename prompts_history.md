@@ -1,20 +1,132 @@
-### 15-05-2026 12:36
-- **Prompt**: can you read this pdf?
+### 17-05-2026 13:27
+- **Prompt**: as a socratic tutor for a first year computer science student. help me understand how to think and implement the first layer
 
-### 15-05-2026 12:37
-- **Prompt**: yeah the name of the pdf is "AI For Software Development_Course -w14 - course 16 - Capstone Project - Kick-Off.pdf"
+### 17-05-2026 13:29
+- **Prompt**: In the PDFs the Corpuse Forge project. As a socratic tutor for a computer science student. Help me think and understand how to implement the Layer 1
 
-### 15-05-2026 12:38
-- **Prompt**: you said you don't have any tool available, is there anything i can do to help you read the pdf?
+### 17-05-2026 13:34
+- **Prompt**: paste the later 1 excerpt from PDF here
 
-### 15-05-2026 12:43
-- **Prompt**: alright so here is a screenshot from the pdf, for now i don't know what does corpus mean (and i think thats the most important thing in this project) so yeah, explain to me what is the mission for me to be clear of what i might need to do and from there i can evaluate more
+### 17-05-2026 13:35
+- **Prompt**: paste the layer 1 excerpt from PDF here
 
-### 15-05-2026 13:01
-- **Prompt**: this is good now please make a .md file to explain the goal for all the team member (i work in a team of 3) to come up with some suggestion and idea for the project
+### 17-05-2026 13:35
+- **Prompt**: AI For Software Development_Course - w14 - course 16 - Capstone Project - Kick-Off.pdf and Project Corpuse Forge - Executive Summary.pdf
 
-### 15-05-2026 13:02
-- **Prompt**: aight bro i changed to agent mode, u may implement now
+### 17-05-2026 13:37
+- **Prompt**: i dont understand. you are asking me if i should paste where it says layer 1 in both of the pdfs?
+
+### 17-05-2026 13:37
+- **Prompt**: if you're on agent mode, you would be able to do it yourself?
+
+### 17-05-2026 13:39
+- **Prompt**: read both of the PDFs entirely to understand. then tutor me for Layer 1, as i want to start working on it today and finish it
+
+### 17-05-2026 13:56
+- **Prompt**: i want to focus on the frontend. letting my two other team members handle the backend and api call. help me get started and understand designing a frontend
+
+### 17-05-2026 14:05
+- **Prompt**: Q1. For frameworks; can i use a python-based framework like streamlit and flask? is React on the same level or is it too different? Q2. For styling, is it absolutely necessary to use CSS? if so, i'll stick with Tailwind Q3. I'm not sure about the App type Q4. Preferably offline so i can test it out Q5. Help me choose which features to choose first and finish them
+
+### 17-05-2026 14:14
+- **Prompt**: I want to go ahead using Streamlit over React. Explain how Streamlit works to a 5 year old. And use the very first feature (Document upload) as an example
+
+### 17-05-2026 14:17
+- **Prompt**: yes. design the first Streamlit screen for Document Upload and break it into the exact sections i need### 17-05-2026 20:27
+- **Prompt**: does this fully satisify the entire layer 1 requirements? what else should i add next
+
+### 17-05-2026 20:32
+- **Prompt**: the prototype is very buggy. it added multiple of the same pdf by itself. and when i remove, it says "AttributeError: module 'streamlit' has no attribute 'experimental_rerun' Traceback: File "C:\Users\moder\Documents\GitHub\corpus-forge\app.py", line 239, in <module>     main() File "C:\Users\moder\Documents\GitHub\corpus-forge\app.py", line 193, in main     st.experimental_rerun()     ^^^^^^^^^^^^^^^^^^^^^"
+
+### 18-05-2026 14:20
+- **Prompt**: why cant i run this file
+
+### 18-05-2026 14:22
+- **Prompt**: help me fix it
+
+### 21-05-2026 22:50
+- **Prompt**: can you make the preview button a bit longer
+
+### 21-05-2026 22:51
+- **Prompt**: i dont like it, revert it back
+
+### 21-05-2026 22:54
+- **Prompt**: give the preview button the same height as the Delete button, and decrease the letters size
+
+### 21-05-2026 23:21
+- **Prompt**: i am switching from json to sql, please help me with it
+
+### 21-05-2026 23:45
+- **Prompt**: clean up codes that are no longer needed
+
+### 21-05-2026 23:46
+- **Prompt**: i mean remove the code that was used to remove the old json files
+
+### 21-05-2026 23:58
+- **Prompt**: fix the bug for me
+
+### 22-05-2026 00:01
+- **Prompt**: help me with the interface, limit preview text to two lines only, then represent the rest as ... (number of lines rest)
+
+### 22-05-2026 00:05
+- **Prompt**: ec289af82bcf4970818a1ddd595d570b_Project Corpuse Forge - Executive Summary.pd  what the weird serie of number in the file name, fix it please
+
+### 22-05-2026 00:08
+- **Prompt**: do it so that the default how a file name should be displayed
+
+### 22-05-2026 00:10
+- **Prompt**: is my python connected to a chromadb?
+
+### 24-05-2026 20:19
+- **Prompt**: right now i am building a website that allows users upload files and prompt a command. Right now im at the step where I turn text into vectors and store them in the chromadb. Check if there is any error, tell me first then fix it
+
+### 24-05-2026 20:32
+- **Prompt**: can you check if my project runs well?
+
+### 24-05-2026 20:38
+- **Prompt**: Embeddings written to Chroma only when the user queries
+
+### 24-05-2026 20:43
+- **Prompt**: can you run the virtual enviroment for me?
+
+### 24-05-2026 20:44
+- **Prompt**: how to turn off socratic mode?
+
+### 24-05-2026 20:44
+- **Prompt**: Stop being Socratic
+
+### 24-05-2026 20:45
+- **Prompt**: i cant run my .venv
+
+### 24-05-2026 20:48
+- **Prompt**: please run and detect any error for me
+
+### 24-05-2026 20:49
+- **Prompt**: File "C:\Users\admin\Documents\GitHub\corpus-forge\app.py", line 8, in <module>     import google.generativeai as genai I got this error when i ran the app tho
+
+### 24-05-2026 20:51
+- **Prompt**: i said requirement already satisfied but it still not working
+
+### 24-05-2026 21:50
+- **Prompt**: check and delete any unused function, abundant codes or any things that are unrelated to the logic and workflow of the app in app.py and vector_store.py
+
+### 24-05-2026 21:52
+- **Prompt**: document this file and update the readme.md
+
+### 24-05-2026 22:04
+- **Prompt**: google.api_core.exceptions.NotFound: 404 models/text-embedding-004 is not found for API version v1beta, or is not supported for embedContent. Call ModelService.ListModels to see the list of available models and their supported methods.  I got this error while running
+
+### 24-05-2026 22:07
+- **Prompt**: google.api_core.exceptions.NotFound: 404 models/embedding-001 is not found for API version v1beta, or is not supported for embedContent. Call ModelService.ListModels to see the list of available models and their supported methods.  i still get this error, how to call ModelService.ListModels
+
+### 24-05-2026 22:09
+- **Prompt**: models/gemini-embedding-001 ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent'] models/gemini-embedding-2-preview ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent'] models/gemini-embedding-2 ['embedContent', 'countTextTokens', 'countTokens', 'asyncBatchEmbedContent']  this is what i got
+
+### 24-05-2026 22:11
+- **Prompt**: Gemini API call error: 404 models/gemini-1.5-flash is not found for API version v1beta, or is not supported for generateContent. Call ModelService.ListModels to see the list of available models and their supported methods.
+
+### 24-05-2026 22:21
+- **Prompt**: Gemini API call error: no such table: cost_logs
 
 ### 17-05-2026 11:42
 - **Prompt**: this is the basic requirement of this project, and of course i dont know how to do it for now, all i have in my mind is the user upload the document to the website and we call an api key of gemini and that's it i dont know what is api key is and how does it work so can you instruct me from the very basic of how to complete this project
