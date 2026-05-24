@@ -80,3 +80,6 @@
 ### 24-05-2026 20:19
 - **Prompt**: right now i am building a website that allows users upload files and prompt a command. Right now im at the step where I turn text into vectors and store them in the chromadb. Check if there is any error, tell me first then fix it
 
+### 24-05-2026 20:32
+- **Prompt**: can you check if my project runs well?
+
