@@ -3,7 +3,7 @@
 #### The Team members
 
 * Names, epita email addresses, and GitHub usernames of all team members.
-
+Tuan Minh HOANG - tuan-minh.hoang@epita.fr - tuanminhhoang
 ---
 
 #### Initial Design
@@ -26,8 +26,9 @@ For each major decision:
 #### Who Did What?
 
 * Document how the project was originally divided among each team member.
+- Abdulaziz took care of the UI first, Minh and Bao took care of the backend
 * Document how responsibilities possibly evolved over time.
-
+- 
 ---
 
 #### AI Collaboration
@@ -35,7 +36,11 @@ For each major decision:
 Document how AI tools were used.
 
 * What tools were used for what purposes?
+- Copilot was mostly used for bugs detection, but it also did help in setting up the logic back bone and first layer of the UI.
+
 * How did AI influence design and implementation decisions?
+- You can feel the design is "AI" with all the icon and things, however, the logical parts are intiallized by us and if we need AI's help, we try to steer it to our way. 
+
 * How did AI impact your learning and development process?
 * How did you evaluate AI-generated suggestions?
 * How did you detect and handle AI errors or limitations?
