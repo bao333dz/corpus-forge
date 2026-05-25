@@ -134,3 +134,6 @@
 ### 17-05-2026 13:11
 - **Prompt**: there is also this more advanced requirement, we just need to complete 2 and the first one i want to choos is prompt engineering and visualization cause those are the two i can understand for the prompt engineering, i understand it as take the user prompt and improve it (if needed) to make the answer better for the visualization i dont really know what to do but it sound simple enough
 
+### 25-05-2026 12:11
+- **Prompt**: document app,py and vector_space.py for me
+
