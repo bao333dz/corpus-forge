@@ -137,3 +137,6 @@
 ### 25-05-2026 12:11
 - **Prompt**: document app,py and vector_space.py for me
 
+### 25-05-2026 12:12
+- **Prompt**: I want inline docstrings, moduel-level comments in vector_store.py and app.py
+
