@@ -1,5 +1,4 @@
 """Streamlit UI for document ingestion, context retrieval, and Gemini workflows."""
-
 import streamlit as st
 import os
 import sqlite3
@@ -8,6 +7,10 @@ from datetime import datetime
 from pathlib import Path
 import re
 import google.generativeai as genai
+import json
+from pyecharts import options as opts
+from pyecharts.charts import WordCloud
+from streamlit_echarts import st_pyecharts
 from vector_store import ensure_document_embeddings, delete_document_embeddings, query_active_context
 
 # Try importing PyPDF2 safely for PDF processing
@@ -195,7 +198,7 @@ def extract_all_text(file_path):
 
 
 def chunk_text(text, chunk_size=1000, overlap=200):
-    """Splits text into overlapping chunks to maintain conversational context boundaries."""
+    """Fixed-size, overlapping chunking"""
     chunks = []
     if not text:
         return chunks
@@ -279,6 +282,41 @@ def generate_gemini_content(prompt, context, system_prompt, temperature):
         return response.text, 1
     except Exception as e:
         return f"Gemini API call error: {str(e)}", 0
+    
+def parse_flashcards_text(text):
+    """Parses Gemini string output into a structured list of flashcard dicts."""
+    cards = []
+    blocks = text.split("---")
+    for block in blocks:
+        lines = [line.strip() for line in block.strip().split("\n") if line.strip()]
+        q_text, a_text = "", ""
+        for line in lines:
+            if line.startswith(("Q:", "**Q:**", "Question:")):
+                q_text = line.replace("**Q:**", "").replace("Q:", "").replace("Question:", "").strip()
+            elif line.startswith(("A:", "**A:**", "Answer:")):
+                a_text = line.replace("**A:**", "").replace("A:", "").replace("Answer:", "").strip()
+        if q_text and a_text:
+            cards.append({"q": q_text, "a": a_text})
+    return cards
+
+def parse_quiz_text(text):
+    """Parses Gemini string output into a structured list of multiple-choice questions."""
+    questions = []
+    blocks = text.split("---")
+    for block in blocks:
+        lines = [line.strip() for line in block.strip().split("\n") if line.strip()]
+        q_text, correct = "", ""
+        options = []
+        for line in lines:
+            if line.startswith(("Q:", "Question:")):
+                q_text = line.replace("Q:", "").replace("Question:", "").strip()
+            elif line.startswith(("1)", "2)", "3)", "4)")):
+                options.append(line)
+            elif line.startswith("Correct:"):
+                correct = line.replace("Correct:", "").strip()
+        if q_text and len(options) >= 2 and correct:
+            questions.append({"q": q_text, "options": options, "correct": correct})
+    return questions
 
 def main():
     """Run the Streamlit app and render all UI sections."""
@@ -411,7 +449,7 @@ def main():
             st.caption(f"Currently utilizing **{len(active_meta)}** document(s) as context.")
             
             # Sub-tabs layout mapping out the course requirements
-            sub_chat, sub_flash, sub_quiz, sub_code = st.tabs(["💬 Chat", "🗂️ Flashcards", "📝 Quizzes", "💻 Code Analysis"])
+            sub_chat, sub_flash, sub_quiz, sub_code, sub_viz = st.tabs(["💬 Chat", "🗂️ Flashcards", "📝 Quizzes", "💻 Code Analysis", "📊 Visualizations"])
 
             # Base Persona matching the Prompt Steering variables from the Sidebar
             base_system_prompt = f"""
@@ -441,44 +479,161 @@ def main():
             # ================= 2. FLASHCARDS WORKFLOW =================
             with sub_flash:
                 st.write("Automatically extract and compile study flashcards from your corpus.")
+                
+                # Initialize Session States for Flashcards
+                if "flashcards" not in st.session_state:
+                    st.session_state.flashcards = []
+                if "flash_index" not in st.session_state:
+                    st.session_state.flash_index = 0
+                if "flipped" not in st.session_state:
+                    st.session_state.flipped = False
+
                 if st.button("Generate New Flashcards", key="btn_flash", use_container_width=True):
                     with st.spinner("Synthesizing flashcards..."):
                         ensure_all_active_embeddings(active_meta)
                         context = query_active_context("Summarize key concepts", active_doc_ids, n_results=5)
-                        prompt = "Extract key terms and concepts. Generate 5 Flashcards formatted cleanly in Markdown (Format: **Q:** [Question] \n **A:** [Answer])."
                         
-                        flashcards, success = generate_gemini_content(prompt, context, base_system_prompt, creativity)
+                        # Strict formatting prompt to ensure parsing works perfectly
+                        prompt = (
+                            "Extract key terms and concepts. Generate 5 Flashcards. "
+                            "Separate each flashcard block explicitly with a line containing '---'. "
+                            "Inside each block, format exactly like this:\n"
+                            "Q: [Question text Here]\nA: [Answer text Here]"
+                        )
+                        
+                        report, success = generate_gemini_content(prompt, context, base_system_prompt, creativity)
                         if success:
-                            save_artifact("flashcard", flashcards)
-                            st.success("Flashcards successfully generated and archived!")
+                            parsed_cards = parse_flashcards_text(report)
+                            if parsed_cards:
+                                st.session_state.flashcards = parsed_cards
+                                st.session_state.flash_index = 0
+                                st.session_state.flipped = False
+                            else:
+                                st.error("Failed to parse flashcards format. Please try generating again.")
+
+                # Render Interactive Flashcard Deck View
+                if st.session_state.flashcards:
+                    st.divider()
+                    idx = st.session_state.flash_index
+                    current_card = st.session_state.flashcards[idx]
+                    
+                    st.caption(f"Card {idx + 1} of {len(st.session_state.flashcards)}")
+                    
+                    # Visual Container Box
+                    with st.container(border=True):
+                        st.markdown(f"#### **Question:**\n{current_card['q']}")
+                        st.write("")
+                        
+                        if st.session_state.flipped:
+                            st.success(f"**Answer:**\n{current_card['a']}")
+                            if st.button("Hide Answer", use_container_width=True):
+                                st.session_state.flipped = False
+                                st.rerun()
+                        else:
+                            if st.button("Flip Card 🔄", use_container_width=True):
+                                st.session_state.flipped = True
+                                st.rerun()
+
+                    # Navigation deck controls
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        if st.button("◀ Previous Card", disabled=(idx == 0), use_container_width=True):
+                            st.session_state.flash_index -= 1
+                            st.session_state.flipped = False
                             st.rerun()
-                
-                # Persistence History render
-                saved_flashcards = load_artifacts("flashcard")
-                for i, (content, time) in enumerate(saved_flashcards):
-                    with st.expander(f"Flashcard Deck - {time}"):
-                        st.markdown(content)
+                    with col2:
+                        if st.button("Next Card ▶", disabled=(idx == len(st.session_state.flashcards) - 1), use_container_width=True):
+                            st.session_state.flash_index += 1
+                            st.session_state.flipped = False
+                            st.rerun()
 
             # ================= 3. QUIZZES WORKFLOW =================
             with sub_quiz:
                 st.write("Generate interactive multiple-choice assessment tests based on your data.")
+                
+                # Initialize Session States for Quiz
+                if "quiz_questions" not in st.session_state:
+                    st.session_state.quiz_questions = []
+                if "quiz_index" not in st.session_state:
+                    st.session_state.quiz_index = 0
+                if "quiz_score" not in st.session_state:
+                    st.session_state.quiz_score = 0
+                if "quiz_feedback" not in st.session_state:
+                    st.session_state.quiz_feedback = None
+
                 if st.button("Generate New Quiz", key="btn_quiz", use_container_width=True):
                     with st.spinner("Generating quiz questions..."):
                         ensure_all_active_embeddings(active_meta)
                         context = query_active_context("Extract important facts and logic", active_doc_ids, n_results=5)
-                        prompt = "Generate a multiple-choice quiz with 3 questions based on the context. Provide the correct answers at the very end."
                         
-                        quiz, success = generate_gemini_content(prompt, context, base_system_prompt, creativity)
+                        # Strict prompt ensuring predictable text outputs for options parsing
+                        prompt = (
+                            "Generate a multiple-choice quiz with 3 questions based on the context. "
+                            "Separate each question block explicitly with a line containing '---'. "
+                            "Format each question block exactly like this:\n"
+                            "Q: [Question Text]\n1) [Option 1]\n2) [Option 2]\n3) [Option 3]\n4) [Option 4]\nCorrect: [Digit 1-4]"
+                        )
+                        
+                        report, success = generate_gemini_content(prompt, context, base_system_prompt, creativity)
                         if success:
-                            save_artifact("quiz", quiz)
-                            st.success("Quiz successfully generated and archived!")
-                            st.rerun()
+                            parsed_questions = parse_quiz_text(report)
+                            if parsed_questions:
+                                st.session_state.quiz_questions = parsed_questions
+                                st.session_state.quiz_index = 0
+                                st.session_state.quiz_score = 0
+                                st.session_state.quiz_feedback = None
+                            else:
+                                st.error("Failed to parse quiz schema safely. Please try again.")
 
-                # Persistence History render
-                saved_quizzes = load_artifacts("quiz")
-                for i, (content, time) in enumerate(saved_quizzes):
-                    with st.expander(f"Quiz Evaluation - {time}"):
-                        st.markdown(content)
+                # Render Stateful Interactive Quiz Assessment View
+                if st.session_state.quiz_questions:
+                    st.divider()
+                    q_idx = st.session_state.quiz_index
+                    current_q = st.session_state.quiz_questions[q_idx]
+                    
+                    st.caption(f"Question {q_idx + 1} of {len(st.session_state.quiz_questions)} | Current Score: {st.session_state.quiz_score}/{len(st.session_state.quiz_questions)}")
+                    
+                    with st.container(border=True):
+                        st.markdown(f"### **{current_q['q']}**")
+                        
+                        # Radio input changes state directly, safe via indexed key parameters
+                        user_choice = st.radio(
+                            "Select your answer option:", 
+                            current_q['options'], 
+                            key=f"quiz_radio_state_{q_idx}"
+                        )
+                        
+                        st.write("")
+                        if st.button("Submit Answer Check", use_container_width=True):
+                            chosen_digit = user_choice[0] # Extracts "1", "2", etc. from prefix
+                            if chosen_digit == current_q['correct']:
+                                st.session_state.quiz_feedback = ("success", "🎉 Correct answer! Well done.")
+                                st.session_state.quiz_score += 1
+                            else:
+                                st.session_state.quiz_feedback = ("error", f"❌ Incorrect. The correct alternative was choice option {current_q['correct']}.")
+                    
+                    # Display submission status evaluations safely 
+                    if st.session_state.quiz_feedback:
+                        status_type, msg = st.session_state.quiz_feedback
+                        if status_type == "success":
+                            st.success(msg)
+                        else:
+                            st.error(msg)
+                            
+                        # Progression logic step transitions
+                        if q_idx < len(st.session_state.quiz_questions) - 1:
+                            if st.button("Proceed to Next Question ▶", use_container_width=True):
+                                st.session_state.quiz_index += 1
+                                st.session_state.quiz_feedback = None
+                                st.rerun()
+                        else:
+                            st.info(f"🏁 Quiz Finished! Your final score is: {st.session_state.quiz_score} out of {len(st.session_state.quiz_questions)}")
+                            if st.button("Restart/Clear Quiz", use_container_width=True):
+                                st.session_state.quiz_questions = []
+                                st.session_state.quiz_index = 0
+                                st.session_state.quiz_score = 0
+                                st.session_state.quiz_feedback = None
+                                st.rerun()
 
             # ================= 4. SOURCE CODE SPECIALIZED WORKFLOW =================
             with sub_code:
@@ -519,6 +674,63 @@ def main():
                             with st.expander(f"{icon} Report - {time}"):
                                 st.markdown(content)
 
+            # ================= 5. VISUALIZATION WORKFLOW =================
+            with sub_viz:
+                st.write("Explore the core keywords in your documents through an interactive visualization.")
+
+                if st.button("Generate Interactive Word Cloud", use_container_width=True):
+                    with st.spinner("Asking AI to analyze and extract keywords..."):
+                        
+                        # Ensure the documents are embedded before querying
+                        ensure_all_active_embeddings(active_meta)
+                        
+                        # 1. Retrieve context from active files
+                        context = query_active_context("Extract main keywords and concepts", active_doc_ids, n_results=10)
+                        
+                        # 2. Strict prompt forcing Gemini to return a valid JSON array
+                        prompt = """
+                        Analyze the provided context and extract the 30 most important keywords or concepts.
+                        Assign a weight to each word from 10 to 100 based on its importance.
+                        Return ONLY a valid JSON array of arrays in this exact format:
+                        [["Keyword1", 100], ["Keyword2", 85], ["Keyword3", 40]]
+                        Do not include markdown tags like ```json. Just the raw array.
+                        """
+                        
+                        report, success = generate_gemini_content(prompt, context, base_system_prompt, creativity)
+                        
+                        if success:
+                            try:
+                                # 3. Process the JSON string returned by Gemini
+                                clean_json = report.replace('```json', '').replace('```', '').strip()
+                                words_data = json.loads(clean_json)
+                                
+                                # 4. Render the Word Cloud using Pyecharts
+                                wordcloud = (
+                                    WordCloud()
+                                    .add(
+                                        series_name="Importance Weight",
+                                        data_pair=words_data,
+                                        word_size_range=[15, 80],
+                                        shape="circle"
+                                    )
+                                    .set_global_opts(
+                                        title_opts=opts.TitleOpts(
+                                            title="Corpus Keyword Cloud",
+                                            subtitle="Hover over a keyword to view its weight",
+                                            pos_left="center"
+                                        ),
+                                        tooltip_opts=opts.TooltipOpts(is_show=True)
+                                    )
+                                )
+                                
+                                # 5. Display the chart in the Streamlit UI
+                                st.divider()
+                                st_pyecharts(wordcloud, height="500px")
+                                
+                            except json.JSONDecodeError:
+                                st.error("Error: AI did not return a valid JSON format. Please try generating again!")
+                            except Exception as e:
+                                st.error(f"An error occurred while rendering the chart: {e}")
 
 if __name__ == "__main__":
     main()
