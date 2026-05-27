@@ -54,7 +54,7 @@ def embed_and_store_document(doc_id, filename, full_text):
     embeddings = []
     ids = []
     metadatas = []
-    
+    # The code loops through every single text chunk and sends it to the Google Gemini Embedding API
     for i, chunk in enumerate(chunks):
         response = genai.embed_content(
             model=EMBEDDING_MODEL,
