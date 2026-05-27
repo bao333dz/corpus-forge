@@ -4,13 +4,32 @@
 
 * Names, epita email addresses, and GitHub usernames of all team members.
 Tuan Minh HOANG - tuan-minh.hoang@epita.fr - tuanminhhoang
+Abdulaziz Eusman - abdulaziz.eusman@epita.fr - azoz-eu
+Bao Duong - bao.duong@epita.fr - bao333dz
 ---
 
 #### Initial Design
 
-* initial architecture
-* assumptions
-* technical choices
+**Initial Architecture:**
+- **Three-Layer Stack**: Frontend (Streamlit UI) → Backend (Python processing) → Data Layer (SQLite + ChromaDB)
+- **Two-Database Approach**: SQLite for structured metadata/chunks, ChromaDB for vector embeddings
+- **Lazy Embedding Generation**: Only create embeddings when user queries (not on upload)
+- **Modular Separation**: `app.py` (UI logic), `vector_store.py` (embedding/retrieval), separate utility functions
+
+**Assumptions:**
+- Users would upload 10-100 documents (not thousands)
+- Queries would be relatively short (~50-100 tokens)
+- Gemini API would be consistently available and responsive
+- Document sizes would be reasonable (<50MB per file)
+- Users would primarily interact via web UI (not API)
+
+**Technical Choices:**
+- **Streamlit** for UI: Rapid development without HTML/CSS/JS overhead
+- **SQLite** for metadata: Zero-config, file-based, no server required
+- **ChromaDB** for vectors: Lightweight, persistent, perfect for embeddings
+- **Google Gemini API**: State-of-the-art LLM with low latency and cost
+- **PyPDF2** for PDF parsing: Simple, reliable for text extraction
+- **Pyecharts** for visualizations: Interactive charts with Streamlit integration
 
 ---
 
